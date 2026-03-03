@@ -85,6 +85,9 @@ router.post("/confirm", async (req, res) => {
       return res.status(400).json({ error: "Missing landmarks for this analysis" });
     }
 
+    const s3KeyResult =
+      analysis.s3KeyResult || `users/${userId}/poses/${analysisId}/result.json`;
+
     const scoring = await classifyPose({
       landmarks: analysis.landmarks,
       saveSample: true,
@@ -108,10 +111,12 @@ router.post("/confirm", async (req, res) => {
       datasetSampleId: scoring.sample_id || null
     };
 
-    await putJson({ bucket: process.env.S3_BUCKET, key: analysis.s3KeyResult, obj: updatedResultObj });
+    await putJson({ bucket: process.env.S3_BUCKET, key: s3KeyResult, obj: updatedResultObj });
 
     res.json({ analysisId, confirmedLabel: userLabel, datasetSampleId: scoring.sample_id || null });
   } catch (err) {
+    // Surface the error message to the client to ease debugging
+    console.error("Error in /api/pose/confirm:", err);
     res.status(400).json({ error: err.message || "Bad Request" });
   }
 });

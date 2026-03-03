@@ -54,15 +54,20 @@ def pose_classify(req: PoseClassifyRequest) -> PoseClassifyResponse:
         extra_features = {
             "best_conf": conf,
         }
-        sample_id = append_pose_sample_to_csv(
-            csv_path=csv_path,
-            landmarks=lms,
-            predicted_pose=pose,
-            confidence=conf,
-            user_label=req.user_label,
-            meta=req.meta,
-            extra_features=extra_features,
-        )
+        try:
+            sample_id = append_pose_sample_to_csv(
+                csv_path=csv_path,
+                landmarks=lms,
+                predicted_pose=pose,
+                confidence=conf,
+                user_label=req.user_label,
+                meta=req.meta,
+                extra_features=extra_features,
+            )
+        except Exception as e:  # pragma: no cover - defensive logging
+            # Failing to write the CSV should not break the API contract.
+            # We keep returning a valid response but surface a warning.
+            warnings.append(f"Failed to append sample to CSV: {e}")
 
     return PoseClassifyResponse(
         pose=pose,

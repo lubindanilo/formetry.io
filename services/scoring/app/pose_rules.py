@@ -40,6 +40,26 @@ def clamp01(x: float) -> float:
     return 0.0 if x < 0.0 else 1.0 if x > 1.0 else x
 
 
+def in_range(value: float, lo: float, hi: float, soft_margin: float) -> float:
+    """
+    Soft membership of value in [lo, hi].
+    - returns 1.0 when lo <= value <= hi
+    - decays linearly to 0.0 when leaving [lo-soft_margin, hi+soft_margin]
+    """
+    if soft_margin <= 0:
+        return 1.0 if lo <= value <= hi else 0.0
+
+    if value < lo:
+        if value <= lo - soft_margin:
+            return 0.0
+        return clamp01((value - (lo - soft_margin)) / soft_margin)
+    if value > hi:
+        if value >= hi + soft_margin:
+            return 0.0
+        return clamp01(((hi + soft_margin) - value) / soft_margin)
+    return 1.0
+
+
 def safe_mean(a: float, b: float) -> float:
     return (a + b) / 2.0
 
@@ -82,6 +102,21 @@ def line_angle_deg(a: P, b: P) -> float:
     return degrees(atan2(dy, dx))
 
 
+def tilt_from_angle(angle_deg: float) -> float:
+    """
+    Convert a raw line angle (in degrees, relative to +x) into a "tilt from horizontal"
+    in [0, 90], where:
+      - 0   => perfectly horizontal
+      - 90  => perfectly vertical
+    """
+    t = abs(angle_deg)
+    if t > 180:
+        t = 360 - t
+    if t > 90:
+        t = 180 - t
+    return t
+
+
 def closeness_to(target: float, value: float, tol: float) -> float:
     """1 when value==target, goes to 0 when |value-target|>=tol."""
     if tol <= 0:
@@ -104,13 +139,16 @@ def body_scale(lms: List[P]) -> float:
 
 
 def compute_features(lms: List[P]) -> Dict[str, float]:
+    # Core joints (left/right)
     ls, rs = get_point(lms, L_SHOULDER), get_point(lms, R_SHOULDER)
     lh, rh = get_point(lms, L_HIP), get_point(lms, R_HIP)
     la, ra = get_point(lms, L_ANKLE), get_point(lms, R_ANKLE)
     lw, rw = get_point(lms, L_WRIST), get_point(lms, R_WRIST)
     le, re = get_point(lms, L_ELBOW), get_point(lms, R_ELBOW)
     lk, rk = get_point(lms, L_KNEE), get_point(lms, R_KNEE)
+    nose = get_point(lms, NOSE)
 
+    # Midpoints
     sh_mid = midpoint(ls, rs)
     hip_mid = midpoint(lh, rh)
     ank_mid = midpoint(la, ra)
@@ -118,126 +156,253 @@ def compute_features(lms: List[P]) -> Dict[str, float]:
 
     scale = body_scale(lms)
 
-    # angles
+    # --- Local joint angles (2D, at the middle joint) ---
     elbow_l = angle_abc(ls, le, lw)
     elbow_r = angle_abc(rs, re, rw)
+
     knee_l = angle_abc(lh, lk, la)
     knee_r = angle_abc(rh, rk, ra)
 
-    body_ang = line_angle_deg(sh_mid, ank_mid)  # horizontal ~ 0/180, vertical ~ +/-90
+    shoulder_l_ang = angle_abc(le, ls, lh)
+    shoulder_r_ang = angle_abc(re, rs, rh)
+
+    hip_l_ang = angle_abc(ls, lh, lk)
+    hip_r_ang = angle_abc(rs, rh, rk)
+
+    neck_ang = angle_abc(hip_mid, sh_mid, nose)
+
+    # --- Global segment orientations (angles then tilts from horizontal) ---
+    body_ang = line_angle_deg(sh_mid, ank_mid)   # horizontal ~ 0/180, vertical ~ +/-90
     torso_ang = line_angle_deg(sh_mid, hip_mid)
+    legs_ang = line_angle_deg(hip_mid, ank_mid)
+    arms_ang = line_angle_deg(sh_mid, w_mid)
 
-    # normalize angles to [0,180] "tilt from horizontal"
-    body_tilt = abs(body_ang)
-    if body_tilt > 180:
-        body_tilt = 360 - body_tilt
-    if body_tilt > 90:
-        body_tilt = 180 - body_tilt  # now in [0,90], 0=horizontal, 90=vertical
+    body_tilt = tilt_from_angle(body_ang)
+    torso_tilt = tilt_from_angle(torso_ang)
+    legs_tilt = tilt_from_angle(legs_ang)
+    arms_tilt = tilt_from_angle(arms_ang)
 
-    torso_tilt = abs(torso_ang)
-    if torso_tilt > 180:
-        torso_tilt = 360 - torso_tilt
-    if torso_tilt > 90:
-        torso_tilt = 180 - torso_tilt
-
-    # wrists vertical gap (human flag signature)
+    # --- Wrists relationship (human flag signature) ---
     wrist_dy = abs(lw.y - rw.y)
     wrist_dx = abs(lw.x - rw.x)
 
-    # relative y ordering helpers (y increases downward in image)
+    # --- Relative y ordering helpers (y increases downward in image) ---
     y_wr = safe_mean(lw.y, rw.y)
     y_sh = safe_mean(ls.y, rs.y)
     y_hip = safe_mean(lh.y, rh.y)
     y_ank = safe_mean(la.y, ra.y)
 
-    # distances normalized
+    # Soft inversion scores: legs above torso vs below
+    # We treat "above" as having smaller y (closer to top of image).
+    def soft_rel(y_a: float, y_b: float, tol: float = 0.05) -> float:
+        """
+        Soft score that y_a is above y_b (y_a < y_b).
+        - 1.0 when y_b - y_a >= tol
+        - 0.0 when y_a >= y_b
+        - linear in between.
+        """
+        if y_a >= y_b:
+            return 0.0
+        gap = y_b - y_a
+        if gap >= tol:
+            return 1.0
+        return clamp01(gap / tol)
+
+    score_legs_above_torso = soft_rel(y_ank, y_hip)
+    score_legs_below_torso = soft_rel(y_hip, y_ank)
+    score_hands_below_shoulders = soft_rel(y_sh, y_wr)
+    score_hands_above_shoulders = soft_rel(y_wr, y_sh)
+
+    # --- Distances normalized by body scale ---
     d_wrist_sh = dist2d(w_mid, sh_mid) / scale
     d_sh_hip = dist2d(sh_mid, hip_mid) / scale
     d_hip_ank = dist2d(hip_mid, ank_mid) / scale
+    d_hip_wrist = dist2d(hip_mid, w_mid) / scale
+    d_torso_len = dist2d(sh_mid, hip_mid) / scale
+    d_legs_len = dist2d(hip_mid, ank_mid) / scale
+
+    d_lr_shoulder = dist2d(ls, rs) / scale
+    d_lr_hip = dist2d(lh, rh) / scale
+    d_lr_ankle = dist2d(la, ra) / scale
+    d_lr_wrist = dist2d(lw, rw) / scale
 
     return {
+        # Core meta
         "scale": scale,
+        # Local angles
         "elbow_l": elbow_l,
         "elbow_r": elbow_r,
         "knee_l": knee_l,
         "knee_r": knee_r,
-        "body_tilt": body_tilt,    # 0=horizontal, 90=vertical
-        "torso_tilt": torso_tilt,  # 0=horizontal, 90=vertical
+        "shoulder_l_ang": shoulder_l_ang,
+        "shoulder_r_ang": shoulder_r_ang,
+        "hip_l_ang": hip_l_ang,
+        "hip_r_ang": hip_r_ang,
+        "neck_ang": neck_ang,
+        # Tilts (0=horizontal, 90=vertical)
+        "body_tilt": body_tilt,
+        "torso_tilt": torso_tilt,
+        "legs_tilt": legs_tilt,
+        "arms_tilt": arms_tilt,
+        # Wrist relations
         "wrist_dy": wrist_dy,
         "wrist_dx": wrist_dx,
+        # Vertical helpers
         "y_wr": y_wr,
         "y_sh": y_sh,
         "y_hip": y_hip,
         "y_ank": y_ank,
+        "score_legs_above_torso": score_legs_above_torso,
+        "score_legs_below_torso": score_legs_below_torso,
+        "score_hands_below_shoulders": score_hands_below_shoulders,
+        "score_hands_above_shoulders": score_hands_above_shoulders,
+        # Distances normalized
         "d_wrist_sh": d_wrist_sh,
         "d_sh_hip": d_sh_hip,
         "d_hip_ank": d_hip_ank,
+        "d_hip_wrist": d_hip_wrist,
+        "d_torso_len": d_torso_len,
+        "d_legs_len": d_legs_len,
+        "d_lr_shoulder": d_lr_shoulder,
+        "d_lr_hip": d_lr_hip,
+        "d_lr_ankle": d_lr_ankle,
+        "d_lr_wrist": d_lr_wrist,
     }
 
 
 def score_handstand(lms: List[P], f: Dict[str, float]) -> float:
-    # Inversion order: ankles above hips above shoulders above wrists (smaller y is "higher")
-    inv = 1.0 if (f["y_ank"] < f["y_hip"] < f["y_sh"] < f["y_wr"]) else 0.0
+    # Inversion order: legs above torso (soft score)
+    inv = f["score_legs_above_torso"]
 
     # Straight limbs
-    elbows = safe_mean(closeness_to(180, f["elbow_l"], 30), closeness_to(180, f["elbow_r"], 30))
-    knees = safe_mean(closeness_to(180, f["knee_l"], 25), closeness_to(180, f["knee_r"], 25))
+    elbows = safe_mean(
+        closeness_to(180, f["elbow_l"], 30),
+        closeness_to(180, f["elbow_r"], 30),
+    )
+    knees = safe_mean(
+        closeness_to(180, f["knee_l"], 25),
+        closeness_to(180, f["knee_r"], 25),
+    )
 
-    # Body vertical
-    vertical = closeness_to(90, f["body_tilt"], 18)
+    # Body and legs vertical
+    vertical_body = closeness_to(90, f["body_tilt"], 18)
+    vertical_legs = closeness_to(90, f["legs_tilt"], 18)
 
-    # Hands roughly under shoulders (in x): we approximate by wrist->shoulder distance not too large
-    hands_close = closeness_to(0.6, f["d_wrist_sh"], 0.5)  # wide tolerance
+    # Hands roughly under center of mass (hips vs wrists vs ankles)
+    support_dist = in_range(f["d_hip_wrist"], lo=0.3, hi=1.3, soft_margin=0.4)
 
-    return clamp01(0.35 * inv + 0.25 * vertical + 0.20 * elbows + 0.15 * knees + 0.05 * hands_close)
+    return clamp01(
+        0.30 * inv
+        + 0.20 * vertical_body
+        + 0.15 * vertical_legs
+        + 0.20 * elbows
+        + 0.10 * knees
+        + 0.05 * support_dist
+    )
 
 
 def score_human_flag(lms: List[P], f: Dict[str, float]) -> float:
-    # Signature: wrists stacked vertically (big dy, small dx) + body horizontal
-    wrists_stacked = clamp01((f["wrist_dy"] - 0.18) / 0.25) * clamp01(1.0 - f["wrist_dx"] / 0.12)
+    # Signature: wrists stacked vertically (big dy, small dx) + body horizontal + arms vertical
+    wrists_stacked = clamp01((f["wrist_dy"] - 0.18) / 0.25) * clamp01(
+        1.0 - f["wrist_dx"] / 0.12
+    )
     horizontal = closeness_to(0, f["body_tilt"], 15)
-    knees = safe_mean(closeness_to(180, f["knee_l"], 25), closeness_to(180, f["knee_r"], 25))
-    elbows = safe_mean(closeness_to(180, f["elbow_l"], 35), closeness_to(180, f["elbow_r"], 35))
-    return clamp01(0.45 * wrists_stacked + 0.30 * horizontal + 0.15 * knees + 0.10 * elbows)
+    arms_vertical = closeness_to(90, f["arms_tilt"], 20)
+    knees = safe_mean(
+        closeness_to(180, f["knee_l"], 25),
+        closeness_to(180, f["knee_r"], 25),
+    )
+    elbows = safe_mean(
+        closeness_to(180, f["elbow_l"], 35),
+        closeness_to(180, f["elbow_r"], 35),
+    )
+    return clamp01(
+        0.35 * wrists_stacked
+        + 0.25 * horizontal
+        + 0.20 * arms_vertical
+        + 0.10 * knees
+        + 0.10 * elbows
+    )
 
 
 def score_planche(lms: List[P], f: Dict[str, float]) -> float:
-    # Hands lower than shoulders, body horizontal, elbows straight
-    hands_below = 1.0 if f["y_wr"] > f["y_sh"] else 0.0
+    # Hands lower than shoulders (soft score), body horizontal, elbows straight
+    hands_below = f["score_hands_below_shoulders"]
     horizontal = closeness_to(0, f["body_tilt"], 15)
-    elbows = safe_mean(closeness_to(180, f["elbow_l"], 25), closeness_to(180, f["elbow_r"], 25))
-    knees = safe_mean(closeness_to(180, f["knee_l"], 25), closeness_to(180, f["knee_r"], 25))
+    elbows = safe_mean(
+        closeness_to(180, f["elbow_l"], 25),
+        closeness_to(180, f["elbow_r"], 25),
+    )
+    knees = safe_mean(
+        closeness_to(180, f["knee_l"], 25),
+        closeness_to(180, f["knee_r"], 25),
+    )
     # shoulders relatively close to wrists (planche support)
-    support = closeness_to(0.5, f["d_wrist_sh"], 0.35)
-    return clamp01(0.25 * hands_below + 0.30 * horizontal + 0.25 * elbows + 0.10 * knees + 0.10 * support)
+    support = in_range(f["d_wrist_sh"], lo=0.3, hi=1.0, soft_margin=0.35)
+    return clamp01(
+        0.25 * hands_below
+        + 0.30 * horizontal
+        + 0.25 * elbows
+        + 0.10 * knees
+        + 0.10 * support
+    )
 
 
 def score_elbow_lever(lms: List[P], f: Dict[str, float]) -> float:
     # Elbow lever: body horizontal like planche BUT elbows bent (~70-120 deg)
     horizontal = closeness_to(0, f["body_tilt"], 18)
-    elbow_bent = safe_mean(closeness_to(95, f["elbow_l"], 35), closeness_to(95, f["elbow_r"], 35))
-    knees = safe_mean(closeness_to(180, f["knee_l"], 35), closeness_to(180, f["knee_r"], 35))
-    hands_below = 1.0 if f["y_wr"] > f["y_sh"] else 0.0
-    return clamp01(0.35 * horizontal + 0.35 * elbow_bent + 0.15 * knees + 0.15 * hands_below)
+    elbow_bent = safe_mean(
+        in_range(f["elbow_l"], lo=70, hi=120, soft_margin=20),
+        in_range(f["elbow_r"], lo=70, hi=120, soft_margin=20),
+    )
+    knees = safe_mean(
+        closeness_to(180, f["knee_l"], 35),
+        closeness_to(180, f["knee_r"], 35),
+    )
+    hands_below = f["score_hands_below_shoulders"]
+    return clamp01(
+        0.35 * horizontal + 0.35 * elbow_bent + 0.15 * knees + 0.15 * hands_below
+    )
 
 
 def score_l_sit(lms: List[P], f: Dict[str, float]) -> float:
     # Torso vertical + legs horizontal and raised near hip level
     torso_vertical = closeness_to(90, f["torso_tilt"], 20)
-    legs_horizontal = closeness_to(0, f["body_tilt"], 18)
-    legs_raised = closeness_to(0.0, abs(f["y_hip"] - f["y_ank"]), 0.10)  # same height
-    elbows = safe_mean(closeness_to(180, f["elbow_l"], 30), closeness_to(180, f["elbow_r"], 30))
-    hands_below = 1.0 if f["y_wr"] > f["y_sh"] else 0.0
-    return clamp01(0.25 * torso_vertical + 0.25 * legs_horizontal + 0.20 * legs_raised + 0.20 * elbows + 0.10 * hands_below)
+    legs_horizontal = closeness_to(0, f["legs_tilt"], 18)
+    legs_raised = closeness_to(
+        0.0,
+        abs(f["y_hip"] - f["y_ank"]),
+        0.10,
+    )  # same height
+    elbows = safe_mean(
+        closeness_to(180, f["elbow_l"], 30),
+        closeness_to(180, f["elbow_r"], 30),
+    )
+    hands_below = f["score_hands_below_shoulders"]
+    return clamp01(
+        0.25 * torso_vertical
+        + 0.25 * legs_horizontal
+        + 0.20 * legs_raised
+        + 0.20 * elbows
+        + 0.10 * hands_below
+    )
 
 
 def score_lever_generic(lms: List[P], f: Dict[str, float]) -> float:
     # Lever: body horizontal + hands above shoulders (bar overhead) + straight limbs
     horizontal = closeness_to(0, f["body_tilt"], 15)
-    hands_above = 1.0 if f["y_wr"] < f["y_sh"] else 0.0
-    elbows = safe_mean(closeness_to(180, f["elbow_l"], 30), closeness_to(180, f["elbow_r"], 30))
-    knees = safe_mean(closeness_to(180, f["knee_l"], 30), closeness_to(180, f["knee_r"], 30))
-    return clamp01(0.40 * horizontal + 0.20 * hands_above + 0.20 * elbows + 0.20 * knees)
+    hands_above = f["score_hands_above_shoulders"]
+    elbows = safe_mean(
+        closeness_to(180, f["elbow_l"], 30),
+        closeness_to(180, f["elbow_r"], 30),
+    )
+    knees = safe_mean(
+        closeness_to(180, f["knee_l"], 30),
+        closeness_to(180, f["knee_r"], 30),
+    )
+    return clamp01(
+        0.40 * horizontal + 0.20 * hands_above + 0.20 * elbows + 0.20 * knees
+    )
 
 
 def front_vs_back_hint(lms: List[P]) -> float:
