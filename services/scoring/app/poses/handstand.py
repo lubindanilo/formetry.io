@@ -1,6 +1,10 @@
 from __future__ import annotations
 from typing import Dict, List
-from ..pose_features import P, clamp01, closeness_to, in_range, safe_mean
+
+from ..pose_features import (
+    P, clamp01, closeness_to, in_range, safe_mean,
+    hips_flexed_soft
+)
 
 def score(lms: List[P], f: Dict[str, float]) -> float:
     view_gate = clamp01(0.35 + 0.65 * max(f["profile_score"], f["frontal_score"]))  # ok face OU profil
@@ -28,4 +32,21 @@ def score(lms: List[P], f: Dict[str, float]) -> float:
     )
 
     anti_bar = clamp01(1.0 - 0.70 * f["score_hands_above_shoulders"])
-    return clamp01(view_gate * base * anti_bar)
+
+    # ---- NOUVEAU : pénalité anti L-Sit ----
+    hips_flexed = hips_flexed_soft(f)                    # fort en L-Sit
+    legs_horizontal = closeness_to(0, f["legs_tilt"], 18)   # fort en L-Sit
+    torso_vertical = closeness_to(90, f["torso_tilt"], 18)  # souvent fort en L-Sit
+
+    l_sit_like = clamp01(
+        0.45 * hips_flexed
+        + 0.35 * legs_horizontal
+        + 0.20 * torso_vertical
+    )
+
+    anti_lsit = clamp01(1.0 - 0.85 * l_sit_like)
+
+    # Gating supplémentaire : un vrai handstand a besoin d'un corps vraiment vertical
+    vertical_gate = clamp01(0.20 + 0.80 * vertical_body) * clamp01(0.20 + 0.80 * vertical_legs)
+
+    return clamp01(view_gate * base * anti_bar * anti_lsit * vertical_gate)
