@@ -3,10 +3,7 @@ from fastapi import FastAPI, HTTPException
 from app.pipeline import score_technique
 from app.schemas import TechniqueScoreRequest, TechniqueScoreResponse
 
-app = FastAPI(
-    title="AI Form Coach - Scoring Service",
-    version="0.1.0",
-)
+app = FastAPI(title="AI Form Coach - Scoring Service", version="0.2.0")
 
 
 @app.get("/health")

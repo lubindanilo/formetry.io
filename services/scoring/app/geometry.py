@@ -40,13 +40,10 @@ def distance(a: tuple[float, float], b: tuple[float, float]) -> float:
 def angle_abc(a: tuple[float, float], b: tuple[float, float], c: tuple[float, float]) -> float:
     ba = (a[0] - b[0], a[1] - b[1])
     bc = (c[0] - b[0], c[1] - b[1])
-
     norm_ba = math.hypot(ba[0], ba[1])
     norm_bc = math.hypot(bc[0], bc[1])
-
     if norm_ba == 0 or norm_bc == 0:
         return 0.0
-
     dot = ba[0] * bc[0] + ba[1] * bc[1]
     cosine = max(-1.0, min(1.0, dot / (norm_ba * norm_bc)))
     return math.degrees(math.acos(cosine))
@@ -72,19 +69,13 @@ def vertical_error_deg(a: tuple[float, float], b: tuple[float, float]) -> float:
     return abs(90.0 - angle)
 
 
-def point_to_line_distance(
-    point: tuple[float, float],
-    line_a: tuple[float, float],
-    line_b: tuple[float, float],
-) -> float:
+def point_to_line_distance(point: tuple[float, float], line_a: tuple[float, float], line_b: tuple[float, float]) -> float:
     x0, y0 = point
     x1, y1 = line_a
     x2, y2 = line_b
-
     denom = math.hypot(x2 - x1, y2 - y1)
     if denom == 0:
         return 0.0
-
     return abs((y2 - y1) * x0 - (x2 - x1) * y0 + x2 * y1 - y2 * x1) / denom
 
 

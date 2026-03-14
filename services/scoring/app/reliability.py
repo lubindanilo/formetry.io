@@ -3,8 +3,11 @@ from typing import Any
 from app.geometry import visibility
 
 
+CONFIDENCE_FLOOR = 0.08
+
+
 def clamp_confidence(value: float) -> float:
-    return round(max(0.25, min(1.0, value)), 3)
+    return round(max(CONFIDENCE_FLOOR, min(1.0, value)), 3)
 
 
 def average_visibility(landmarks: list[Any], names: list[str]) -> float:
