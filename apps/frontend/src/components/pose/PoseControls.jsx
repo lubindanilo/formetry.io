@@ -3,12 +3,8 @@ import React from "react";
 export default function PoseControls({
   status,
   flowStatus,
-  imageUrl,
   imageInfo,
   activeModel,
-  modelMode,
-  setModelMode,
-  resetLandmarker,
   analyzeCurrentImage,
   canAnalyze,
   fileDisabled,
@@ -24,23 +20,6 @@ export default function PoseControls({
     <div className="controls">
       <div className="buttons" style={{ gap: 10, display: "flex", flexWrap: "wrap" }}>
         <input type="file" accept="image/*" onChange={onPickFile} disabled={fileDisabled} />
-
-        <label className="muted" style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          Model mode:
-          <select
-            value={modelMode}
-            onChange={(e) => {
-              setModelMode(e.target.value);
-              resetLandmarker();
-              if (imageUrl) setTimeout(() => analyzeCurrentImage(), 0);
-            }}
-            disabled={fileDisabled}
-          >
-            <option value="auto">auto (full → lite)</option>
-            <option value="full">full only</option>
-            <option value="lite">lite only</option>
-          </select>
-        </label>
 
         <button className="btn" onClick={analyzeCurrentImage} disabled={!canAnalyze}>
           {status === "loading" ? "Analyse..." : "Analyser la photo"}

@@ -1,9 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { DrawingUtils, PoseLandmarker } from "@mediapipe/tasks-vision";
-import {
-  createPoseLandmarkerDirect,
-  createPoseLandmarkerWithFallback,
-} from "../lib/poseLandmarkerFactory.js";
+import { createPoseLandmarkerWithFallback } from "../lib/poseLandmarkerFactory.js";
 import { augmentPose, POSE_IDX } from "../lib/poseAugment.js";
 import PoseControls from "./pose/PoseControls.jsx";
 import PoseResultPanel from "./pose/PoseResultPanel.jsx";
@@ -54,9 +51,8 @@ export default function PoseSandbox() {
   const [imageUrl, setImageUrl] = useState("");
   const [imageInfo, setImageInfo] = useState({ w: 0, h: 0, name: "" });
 
-  // Model selection
+  // Model: full by default, lite fallback (no user choice)
   const [activeModel, setActiveModel] = useState("unknown"); // full | lite | unknown
-  const [modelMode, setModelMode] = useState("auto"); // auto | full | lite
 
   // Previews
   const [preview, setPreview] = useState([]);
@@ -161,30 +157,17 @@ export default function PoseSandbox() {
       outputSegmentationMasks: false,
     };
 
-    let landmarker;
-    let modelName = "unknown";
+    const out = await createPoseLandmarkerWithFallback({
+      primaryModelPath: modelFullPath,
+      fallbackModelPath: modelLitePath,
+      primaryName: "full",
+      fallbackName: "lite",
+      overrides,
+    });
 
-    if (modelMode === "full") {
-      landmarker = await createPoseLandmarkerDirect(modelFullPath, overrides);
-      modelName = "full";
-    } else if (modelMode === "lite") {
-      landmarker = await createPoseLandmarkerDirect(modelLitePath, overrides);
-      modelName = "lite";
-    } else {
-      const out = await createPoseLandmarkerWithFallback({
-        primaryModelPath: modelFullPath,
-        fallbackModelPath: modelLitePath,
-        primaryName: "full",
-        fallbackName: "lite",
-        overrides,
-      });
-      landmarker = out.landmarker;
-      modelName = out.activeModel;
-    }
-
-    landmarkerRef.current = landmarker;
-    setActiveModel(modelName);
-    return landmarker;
+    landmarkerRef.current = out.landmarker;
+    setActiveModel(out.activeModel);
+    return out.landmarker;
   }
 
   async function analyzeCurrentImage() {
@@ -392,12 +375,8 @@ export default function PoseSandbox() {
       <PoseControls
         status={status}
         flowStatus={flowStatus}
-        imageUrl={imageUrl}
         imageInfo={imageInfo}
         activeModel={activeModel}
-        modelMode={modelMode}
-        setModelMode={setModelMode}
-        resetLandmarker={resetLandmarker}
         analyzeCurrentImage={analyzeCurrentImage}
         canAnalyze={canAnalyze}
         fileDisabled={fileDisabled}
