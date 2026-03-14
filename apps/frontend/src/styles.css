@@ -171,3 +171,22 @@ body {
 .footer {
   margin-top: 18px;
 }
+
+/* Dashboard résultat d'analyse */
+.analysis-dashboard {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 24px;
+  align-items: center;
+  padding: 20px 24px;
+  background: rgba(26, 26, 28, 0.95);
+  border: 1px solid #2a2a2e;
+  border-radius: 16px;
+}
+
+@media (max-width: 520px) {
+  .analysis-dashboard {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+}

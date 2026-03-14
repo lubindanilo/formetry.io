@@ -1,8 +1,13 @@
 import React from "react";
 import { round4 } from "../../lib/poseSandboxUtils.js";
+import AnalysisDashboard from "./analysis/AnalysisDashboard.jsx";
 
 /** Afficher Confidence, analysisId, s3Key*, Scores debug (debug). */
 const SHOW_RESULT_DEBUG = false;
+
+/** Message de warning qu'on ne souhaite pas afficher (angle caméra / profil). */
+const HIDDEN_WARNING_CAMERA_ANGLE =
+  "Angle caméra: essaie plutôt un profil net (de côté). Pour Planche/L-Sit/Levers/Elbow lever/Human flag, le profil est beaucoup plus fiable.";
 
 export default function PoseResultPanel({
   classify,
@@ -43,13 +48,16 @@ export default function PoseResultPanel({
             ) : null}
           </div>
 
-          {Array.isArray(classify.warnings) && classify.warnings.length > 0 ? (
+          {Array.isArray(classify.warnings) &&
+          classify.warnings.filter((w) => w !== HIDDEN_WARNING_CAMERA_ANGLE).length > 0 ? (
             <ul className="list">
-              {classify.warnings.map((w, i) => (
-                <li key={`${w}-${i}`} className="row" style={{ gridTemplateColumns: "1fr" }}>
-                  <span className="mono">{w}</span>
-                </li>
-              ))}
+              {classify.warnings
+                .filter((w) => w !== HIDDEN_WARNING_CAMERA_ANGLE)
+                .map((w, i) => (
+                  <li key={`${w}-${i}`} className="row" style={{ gridTemplateColumns: "1fr" }}>
+                    <span className="mono">{w}</span>
+                  </li>
+                ))}
             </ul>
           ) : null}
 
@@ -76,7 +84,7 @@ export default function PoseResultPanel({
                   color: "#f2f2f2",
                 }}
               >
-                <option value="">Modifier la figure détectée</option>
+                <option value="">Modifier</option>
                 {supportedPoses.map((p) => (
                   <option key={p} value={p}>
                     {p}
@@ -92,9 +100,15 @@ export default function PoseResultPanel({
             {confirmError ? <p className="error">Confirm erreur: {confirmError}</p> : null}
             {confirmStatus === "done" ? (
               <>
-                {techniqueScore ? (
-                  <details>
-                    <summary className="muted">Résultat d'analyse</summary>
+                {techniqueScore?.scores ? (
+                  <div style={{ marginTop: 8 }}>
+                    <p className="muted" style={{ marginBottom: 8 }}>Résultat d'analyse</p>
+                    <AnalysisDashboard scores={techniqueScore.scores} />
+                  </div>
+                ) : null}
+                {SHOW_RESULT_DEBUG && techniqueScore ? (
+                  <details style={{ marginTop: 12 }}>
+                    <summary className="muted">Résultat brut (debug)</summary>
                     <pre className="mono" style={{ whiteSpace: "pre-wrap", margin: 0, marginTop: 8 }}>
                       {JSON.stringify(techniqueScore, null, 2)}
                     </pre>
