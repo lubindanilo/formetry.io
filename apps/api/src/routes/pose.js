@@ -1,9 +1,13 @@
 const express = require("express");
 const { z } = require("zod");
+const mongoose = require("mongoose");
 const Analysis = require("../models/Analysis");
+const User = require("../models/User");
 const { classifyPose, scoreTechnique } = require("../scoring");
 const { putJson } = require("../s3");
 const { getTopImprovements } = require("../feedback");
+const { getScoreLabel } = require("../lib/scoreLabel");
+const { authRequired } = require("../middleware/auth");
 
 const router = express.Router();
 
@@ -24,7 +28,9 @@ const ClassifySchema = z.object({
 
 router.post("/classify", async (req, res) => {
   try {
-    const { analysisId, userId, s3KeyImage, landmarks, meta } = ClassifySchema.parse(req.body);
+    const body = ClassifySchema.parse(req.body);
+    const userId = req.user?.id ?? body.userId;
+    const { analysisId, s3KeyImage, landmarks, meta } = body;
 
     const scoring = await classifyPose({
       landmarks,
@@ -78,7 +84,9 @@ const ConfirmSchema = z.object({
 
 router.post("/confirm", async (req, res) => {
   try {
-    const { analysisId, userId, userLabel } = ConfirmSchema.parse(req.body);
+    const body = ConfirmSchema.parse(req.body);
+    const userId = req.user?.id ?? body.userId;
+    const { analysisId, userLabel } = body;
 
     const analysis = await Analysis.findOne({ analysisId, userId }).lean();
     if (!analysis) return res.status(404).json({ error: "Analysis not found" });
@@ -132,6 +140,25 @@ router.post("/confirm", async (req, res) => {
       techniqueScore = null;
     }
 
+    if (techniqueScore?.scores) {
+      const scores = techniqueScore.scores;
+      const globalScore = typeof scores.global === "number" ? scores.global : null;
+      await Analysis.updateOne(
+        { analysisId, userId },
+        {
+          $set: {
+            techniqueScoreGlobal: globalScore,
+            techniqueScoreMetrics: {
+              body_line: typeof scores.body_line === "number" ? scores.body_line : undefined,
+              symmetry: typeof scores.symmetry === "number" ? scores.symmetry : undefined,
+              lockout_extension: typeof scores.lockout_extension === "number" ? scores.lockout_extension : undefined
+            },
+            techniqueImprovements: (techniqueScore.improvements || []).slice(0, 3).map((i) => i.message || "")
+          }
+        }
+      );
+    }
+
     res.json({
       analysisId,
       confirmedLabel: userLabel,
@@ -141,6 +168,48 @@ router.post("/confirm", async (req, res) => {
   } catch (err) {
     // Surface the error message to the client to ease debugging
     console.error("Error in /api/pose/confirm:", err);
+    res.status(400).json({ error: err.message || "Bad Request" });
+  }
+});
+
+const SaveToDashboardSchema = z.object({
+  analysisId: z.string().min(1)
+});
+
+router.post("/save-to-dashboard", authRequired, async (req, res) => {
+  try {
+    const { analysisId } = SaveToDashboardSchema.parse(req.body);
+    const userId = req.user.id;
+
+    const analysis = await Analysis.findOne({ analysisId, userId }).lean();
+    if (!analysis) return res.status(404).json({ error: "Analyse introuvable." });
+    if (analysis.techniqueScoreGlobal == null) {
+      return res.status(400).json({ error: "Confirmez d'abord la figure et consultez le score avant de sauvegarder." });
+    }
+
+    const s3KeyResult = analysis.s3KeyResult || `users/${userId}/poses/${analysisId}/result.json`;
+    const entry = {
+      date: new Date(),
+      analysisId,
+      s3KeyImage: analysis.s3KeyImage,
+      s3KeyResult,
+      userLabel: analysis.userLabel,
+      scoreGlobal: analysis.techniqueScoreGlobal,
+      scoreMetrics: analysis.techniqueScoreMetrics || {},
+      feedbackGlobal: analysis.techniqueScoreGlobal != null ? getScoreLabel(analysis.techniqueScoreGlobal) : undefined,
+      topFeedbacks: analysis.techniqueImprovements || []
+    };
+
+    await User.updateOne(
+      { _id: new mongoose.Types.ObjectId(userId) },
+      { $push: { posture_history: entry } }
+    );
+
+    res.json({ ok: true, message: "Analyse enregistrée dans votre tableau de bord." });
+  } catch (err) {
+    if (err.name === "ZodError") {
+      return res.status(400).json({ error: "analysisId requis." });
+    }
     res.status(400).json({ error: err.message || "Bad Request" });
   }
 });

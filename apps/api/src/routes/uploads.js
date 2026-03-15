@@ -6,13 +6,18 @@ const { presignPutObject } = require("../s3");
 const router = express.Router();
 
 const PresignSchema = z.object({
-  userId: z.string().min(1),
+  userId: z.string().min(1).optional(),
   contentType: z.string().min(1).default("image/jpeg")
 });
 
 router.post("/presign", async (req, res) => {
   try {
-    const { userId, contentType } = PresignSchema.parse(req.body);
+    const parsed = PresignSchema.parse(req.body);
+    const userId = req.user?.id ?? parsed.userId;
+    if (!userId) {
+      return res.status(400).json({ error: "Authentification requise ou userId requis." });
+    }
+    const contentType = parsed.contentType;
 
     const analysisId = uuidv4();
     const s3KeyImage = `users/${userId}/poses/${analysisId}/frame.jpg`;

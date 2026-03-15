@@ -1,8 +1,8 @@
 {
   "lsit": {
     "torso_verticality": "Grandis-toi entre les épaules et garde le buste haut.",
-    "legs_horizontality": "Monte les jambes jusqu’à les rendre parfaitementparallèles au sol.",
-    "leg_height": "Remonte les talons jusqu’à la ligne des hanches.",
+    "legs_horizontality": "Tes jambes doivent être parfaitement parallèles au sol.",
+    "leg_height": "Tes talons doivent être sur la même ligne que tes hanches.",
     "hip_height_symmetry": "Garde le bassin à plat : ne laisse pas une hanche tomber.",
     "knee_height_symmetry": "Garder les genoux à la même hauteur.",
     "ankle_height_symmetry": "Garder les chevilles à la même hauteur.",
@@ -10,7 +10,7 @@
     "left_elbow_lockout": "Pousse fort dans la main gauche et verrouille le coude.",
     "right_elbow_lockout": "Pousse fort dans la main droite et verrouille le coude.",
     "left_knee_lockout": "Tendre au maximum la jambe gauche.",
-    "right_knee_lockout": "Tendre au maximumla jambe droite."
+    "right_knee_lockout": "Tendre au maximum la jambe droite."
   },
   "handstand": {
     "body_verticality": "Empile mains, épaules, bassin et pointes de pieds sur une seule ligne.",
@@ -24,8 +24,8 @@
     "right_elbow_lockout": "Tendre le bras droit.",
     "left_knee_lockout": "Tendre la jambe gauche.",
     "right_knee_lockout": "Tendre la jambe droite.",
-    "left_hip_extension": "Allonge davantage la jambe gauche vers le haut pour une ligne plus propre.",
-    "right_hip_extension": "Allonge davantage la jambe droite vers le haut pour finir la ligne."
+    "left_hip_extension": "Allonge davantage ta jambe gauche vers le haut pour une ligne plus propre.",
+    "right_hip_extension": "Allonge davantage ta jambe droite vers le haut pour une ligne plus propre."
   },
   "planche": {
     "shoulder_ankle_horizontality": "Cherche une ligne droite et horizontale de l’épaule jusqu’aux chevilles.",

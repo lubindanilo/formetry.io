@@ -20,6 +20,10 @@ const AnalysisSchema = new mongoose.Schema(
     userLabel: { type: String, default: "" },
     landmarks: { type: [LandmarkSchema], default: [] },
 
+    techniqueScoreGlobal: Number,
+    techniqueScoreMetrics: { type: Object },
+    techniqueImprovements: { type: [String], default: [] },
+
     createdAt: { type: Date, default: Date.now }
   },
   { versionKey: false }

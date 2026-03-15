@@ -72,8 +72,8 @@ export function mapLandmarksForApi(lms) {
   }));
 }
 
-export async function fetchJson(url, options) {
-  const res = await fetch(url, options);
+export async function fetchJson(url, options = {}) {
+  const res = await fetch(url, { ...options, credentials: "include" });
   const text = await res.text();
   let data = null;
   try {

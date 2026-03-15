@@ -5,6 +5,8 @@ import { augmentPose, POSE_IDX } from "../lib/poseAugment.js";
 import PoseControls from "./pose/PoseControls.jsx";
 import PoseResultPanel from "./pose/PoseResultPanel.jsx";
 import PoseKeypointsPanel from "./pose/PoseKeypointsPanel.jsx";
+import AnalyzeStepper from "./pose/AnalyzeStepper.jsx";
+import { useAuth } from "../contexts/AuthContext.jsx";
 import {
   confFrom,
   drawExtraPoints,
@@ -40,7 +42,7 @@ const SHOW_KEYPOINT_PANELS = false;
 /** Dessiner les points et le squelette sur l'image (debug). */
 const SHOW_POSE_OVERLAY = false;
 
-export default function PoseSandbox() {
+export default function PoseSandbox(props) {
   // Canvas
   const canvasRef = useRef(null);
   const drawingUtilsRef = useRef(null);
@@ -65,8 +67,8 @@ export default function PoseSandbox() {
   const [derivedPreview, setDerivedPreview] = useState([]);
   const [poseLandmarks, setPoseLandmarks] = useState(null); // raw 33 landmarks from MediaPipe (first pose)
 
-  // Backend flow
-  const [userId, setUserId] = useState("demo");
+  // Backend flow (userId fourni par le parent : utilisateur connecté ou "demo")
+  const userId = typeof props.userId === "string" && props.userId.trim() ? props.userId.trim() : "demo";
   const [flowStatus, setFlowStatus] = useState("idle"); // idle | presign | uploading | classifying | done | error
   const [flowError, setFlowError] = useState("");
   const [presign, setPresign] = useState(null); // {analysisId, s3KeyImage, uploadUrl, expiresIn}
@@ -76,6 +78,10 @@ export default function PoseSandbox() {
   const [userLabel, setUserLabel] = useState("");
   const [datasetSampleId, setDatasetSampleId] = useState(null);
   const [techniqueScore, setTechniqueScore] = useState(null);
+  const [savedToDashboard, setSavedToDashboard] = useState(false);
+  const [saveStatus, setSaveStatus] = useState("idle"); // idle | saving | done | error
+  const [saveError, setSaveError] = useState("");
+  const { refreshMe } = useAuth();
 
   const modelFullPath = useMemo(() => "/models/pose_landmarker_full.task", []);
   const modelLitePath = useMemo(() => "/models/pose_landmarker_lite.task", []);
@@ -120,6 +126,9 @@ export default function PoseSandbox() {
       setUserLabel("");
       setDatasetSampleId(null);
       setTechniqueScore(null);
+      setSavedToDashboard(false);
+      setSaveStatus("idle");
+      setSaveError("");
       return;
     }
 
@@ -137,6 +146,9 @@ export default function PoseSandbox() {
     setUserLabel("");
     setDatasetSampleId(null);
     setTechniqueScore(null);
+    setSavedToDashboard(false);
+    setSaveStatus("idle");
+    setSaveError("");
 
     return () => URL.revokeObjectURL(url);
   }, [file]);
@@ -357,6 +369,28 @@ export default function PoseSandbox() {
     }
   }
 
+  async function saveToDashboard() {
+    const analysisId = presign?.analysisId || classify?.analysisId;
+    if (!analysisId) return;
+    setSaveStatus("saving");
+    setSaveError("");
+    try {
+      await fetchJson("/api/pose/save-to-dashboard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ analysisId }),
+      });
+      setSavedToDashboard(true);
+      setSaveStatus("done");
+      refreshMe?.();
+    } catch (e) {
+      setSaveStatus("error");
+      setSaveError(e?.message ?? String(e));
+    }
+  }
+
+  const stepperStep = savedToDashboard ? 4 : confirmStatus === "done" ? 3 : classify ? 2 : 1;
+
   // Auto-analyze when a new image is selected
   useEffect(() => {
     if (!imageUrl) return;
@@ -390,6 +424,7 @@ export default function PoseSandbox() {
 
   return (
     <section className="card">
+      <AnalyzeStepper currentStep={stepperStep} />
       <PoseControls
         status={status}
         flowStatus={flowStatus}
@@ -412,6 +447,10 @@ export default function PoseSandbox() {
           setConfirmError("");
           setUserLabel("");
           setDatasetSampleId(null);
+          setTechniqueScore(null);
+          setSavedToDashboard(false);
+          setSaveStatus("idle");
+          setSaveError("");
           const canvas = canvasRef.current;
           if (canvas) {
             const ctx = canvas.getContext("2d");
@@ -475,6 +514,12 @@ export default function PoseSandbox() {
             confirmStatus={confirmStatus}
             confirmError={confirmError}
             techniqueScore={techniqueScore}
+            analysisId={presign?.analysisId || classify?.analysisId}
+            isLoggedIn={userId !== "demo"}
+            savedToDashboard={savedToDashboard}
+            onSaveToDashboard={saveToDashboard}
+            saveStatus={saveStatus}
+            saveError={saveError}
           />
 
           {SHOW_KEYPOINT_PANELS ? (

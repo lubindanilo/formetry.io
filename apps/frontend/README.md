@@ -6,13 +6,17 @@ A MERN base (MongoDB, Express, ReactJS, Node.js)
 
 MediaPipe: Integrated into the front-end for posture estimation directly in the browser.
 React JS
-MongoDB: Used as a NoSQL database to store user accounts, performance scores, and analysis history.
+MongoDB: Used as a NoSQL database to store user accounts, performance scores, and analysis history. MongoDB Atlas propose un niveau gratuit adapté au développement.
 Amazon S3 (or a service equivalent to Google Cloud Storage): For scalable and secure storage of images and videos uploaded by users.
 Express.js: Will serve as the framework for building the backend API that handles client requests.
 JavaScript or Python scripts (executed on the backend) to:
 - Analyze the key points detected by MediaPipe.
 - Calculate custom posture quality indicators.
 - Generate detailed feedback for the user.
+
+## Comptes utilisateurs
+
+L’app permet de créer un compte (e-mail + mot de passe) et de se connecter. Le JWT est stocké dans un cookie HttpOnly (défini par l’API). Après connexion, le tableau de bord affiche le niveau global, les dernières analyses et une vue de la progression. Les analyses effectuées en étant connecté sont enregistrées dans l’historique utilisateur (MongoDB).
 
 # React + Vite
 

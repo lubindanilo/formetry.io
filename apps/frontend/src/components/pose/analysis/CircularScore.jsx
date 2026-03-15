@@ -14,9 +14,6 @@ export default function CircularScore({ value, max = 100, size = 160, strokeWidt
   const trackColor = getTrackColor();
   const label = getScoreLabel(overallScore);
 
-  // DEBUG provisoire : à retirer une fois le bon format de score confirmé
-  console.log("CircularScore — score brut =", value, "type =", typeof value, "Number(value) =", Number(value), "overallScore (normalisé 0–100) =", overallScore, "label =", label, "color =", color);
-
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - pct * circumference;

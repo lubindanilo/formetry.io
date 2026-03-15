@@ -19,6 +19,12 @@ export default function PoseResultPanel({
   confirmStatus,
   confirmError,
   techniqueScore,
+  analysisId,
+  isLoggedIn,
+  savedToDashboard,
+  onSaveToDashboard,
+  saveStatus,
+  saveError,
 }) {
   return (
     <>
@@ -109,7 +115,7 @@ export default function PoseResultPanel({
                 fontWeight: 600,
               }}
             >
-              {confirmStatus === "confirming" ? "Confirmation..." : "Confirmer la figure et lancer l'analyse technique"}
+              {confirmStatus === "confirming" ? "Confirmation..." : "Confirmer"}
             </button>
 
             {confirmError ? <p className="error">Confirm erreur: {confirmError}</p> : null}
@@ -117,11 +123,11 @@ export default function PoseResultPanel({
               <>
                 {techniqueScore?.scores ? (
                   <div style={{ marginTop: 8 }}>
-                    <p className="muted" style={{ marginBottom: 8 }}>Résultat d'analyse</p>
+                    <p style={{ marginBottom: 8, color: "#fff", fontSize: "1.05rem", fontWeight: 500 }}>Résultat d'analyse</p>
                     <AnalysisDashboard scores={techniqueScore.scores} />
                     {Array.isArray(techniqueScore.improvements) && techniqueScore.improvements.length > 0 ? (
                       <div style={{ marginTop: 12 }}>
-                        <p className="muted" style={{ marginBottom: 6, fontSize: "0.95rem" }}>
+                        <p style={{ marginBottom: 6, fontSize: "1.05rem", fontWeight: 500, color: "#fff" }}>
                           Points d'amélioration
                         </p>
                         <ol
@@ -144,6 +150,28 @@ export default function PoseResultPanel({
                     ) : null}
                   </div>
                 ) : null}
+                {techniqueScore && isLoggedIn && (
+                  <div style={{ marginTop: 14 }}>
+                    {savedToDashboard ? (
+                      <p className="muted" style={{ margin: 0, color: "#22c55e" }}>
+                        Analyse enregistrée dans votre tableau de bord.
+                      </p>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          onClick={onSaveToDashboard}
+                          disabled={saveStatus === "saving" || !analysisId}
+                          style={{ textDecoration: "none", fontSize: "0.85rem" }}
+                        >
+                          {saveStatus === "saving" ? "Enregistrement..." : "Sauvegarder l'analyse"}
+                        </button>
+                        {saveError ? <p className="error" style={{ marginTop: 8, marginBottom: 0 }}>{saveError}</p> : null}
+                      </>
+                    )}
+                  </div>
+                )}
                 {SHOW_RESULT_DEBUG && techniqueScore ? (
                   <details style={{ marginTop: 12 }}>
                     <summary className="muted">Résultat brut (debug)</summary>
