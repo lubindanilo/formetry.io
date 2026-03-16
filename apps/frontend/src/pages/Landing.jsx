@@ -1,24 +1,26 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import LandingDemoCard from "../components/landing/LandingDemoCard.jsx";
+import { useTranslation } from "react-i18next";
 
 export default function Landing() {
+  const { t } = useTranslation();
   return (
     <div className="landing">
       <section className="landing-hero">
         <div className="landing-hero__text">
           <h1 className="landing-hero__title">
-            Découvres exactement quoi corriger sur tes figures de calisthénie et progresse plus vite
+            {t("landing.hero_title")}
           </h1>
           <p className="landing-hero__desc">
-            Importe une photo, obtiens un score technique clair et 3 corrections immédiatement applicables.
+            {t("landing.hero_desc")}
           </p>
           <div className="landing-hero__ctas">
             <Link to="/analyze" className="landing-cta landing-cta--primary">
-              Analyser ma figure
+              {t("common.analyze_cta")}
             </Link>
             <Link to="/register" className="landing-cta landing-cta--secondary">
-              Créer un compte
+              {t("common.create_account")}
             </Link>
           </div>
         </div>
@@ -34,9 +36,11 @@ export default function Landing() {
               <path d="m3 21 9-9" /><path d="m12 12 6 6" /><path d="m3 12 3-3 3-3" />
             </svg>
           </div>
-          <h3 className="landing-feature-card__title">Diagnostic immédiat</h3>
+          <h3 className="landing-feature-card__title">
+            {t("landing.feature_diagnostic_title")}
+          </h3>
           <p className="landing-feature-card__desc">
-          Upload ta photo et obtiens instantanément une analyse claire de ta figure, comme avec un coach personnel.
+            {t("landing.feature_diagnostic_desc")}
           </p>
         </div>
         <div className="landing-feature-card">
@@ -46,9 +50,11 @@ export default function Landing() {
               <circle cx="12" cy="12" r="9" strokeDasharray="45 32" strokeDashoffset="11" transform="rotate(-90 12 12)" />
             </svg>
           </div>
-          <h3 className="landing-feature-card__title">Comprends exactement ce qui te bloque</h3>
+          <h3 className="landing-feature-card__title">
+            {t("landing.feature_understand_title")}
+          </h3>
           <p className="landing-feature-card__desc">
-          Un score global et des métriques détaillées pour voir en un coup d’œil ce qui freine ta posture.
+            {t("landing.feature_understand_desc")}
           </p>
         </div>
         <div className="landing-feature-card">
@@ -58,10 +64,11 @@ export default function Landing() {
               <path d="M21 6v4h-4" />
             </svg>
           </div>
-          <h3 className="landing-feature-card__title">Mesure ta progression dans le temps
+          <h3 className="landing-feature-card__title">
+            {t("landing.feature_progress_title")}
           </h3>
           <p className="landing-feature-card__desc">
-          Compare tes analyses, vois ce qui s’améliore réellement et valide objectivement tes progrès sur chaque figure.
+            {t("landing.feature_progress_desc")}
           </p>
         </div>
         </section>

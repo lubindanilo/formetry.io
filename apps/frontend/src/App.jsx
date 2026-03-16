@@ -6,6 +6,7 @@ import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Landing from "./pages/Landing.jsx";
+import { useTranslation } from "react-i18next";
 
 function Header() {
   const { user, loading, logout } = useAuth();
@@ -13,6 +14,7 @@ function Header() {
   const location = useLocation();
   const isLanding = location.pathname === "/" && !user;
   const [isMenuOpen, setMenuOpen] = useState(false);
+  const { t, i18n } = useTranslation();
 
   useEffect(() => {
     setMenuOpen(false);
@@ -28,13 +30,13 @@ function Header() {
       <div className="header-nav">
         <h1 style={{ margin: 0 }}>
           <Link to="/" style={{ color: "inherit", textDecoration: "none" }}>
-            Calisthenics AI
+            {t("header.brand")}
           </Link>
         </h1>
         <button
           type="button"
           className="header-nav-toggle"
-          aria-label="Ouvrir le menu"
+          aria-label={t("header.menu_open")}
           onClick={() => setMenuOpen((o) => !o)}
         >
           <span className="header-nav-toggle-bar" />
@@ -44,9 +46,9 @@ function Header() {
         <div className="header-nav-links">
           {!loading && (
             <>
-              <Link to="/accueil">Accueil</Link>
-              {user ? <Link to="/">Dashboard</Link> : null}
-              <Link to="/analyze">Analyser une figure</Link>
+              <Link to="/accueil">{t("header.home")}</Link>
+              {user ? <Link to="/">{t("header.dashboard")}</Link> : null}
+              <Link to="/analyze">{t("header.analyze")}</Link>
               {user ? (
                 <>
                   <button
@@ -54,17 +56,33 @@ function Header() {
                     className="header-nav-link-btn"
                     onClick={handleLogout}
                   >
-                    Déconnexion
+                    {t("header.logout")}
                   </button>
                 </>
               ) : (
                 <>
-                  <Link to="/login">Connexion</Link>
-                  <Link to="/register">Créer un compte</Link>
+                  <Link to="/login">{t("header.login")}</Link>
+                  <Link to="/register">{t("header.register")}</Link>
                 </>
               )}
             </>
           )}
+          <div className="header-lang-switch">
+            <button
+              type="button"
+              onClick={() => i18n.changeLanguage("en")}
+              className={i18n.language?.startsWith("en") ? "header-lang-active" : ""}
+            >
+              EN
+            </button>
+            <button
+              type="button"
+              onClick={() => i18n.changeLanguage("fr")}
+              className={i18n.language?.startsWith("fr") ? "header-lang-active" : ""}
+            >
+              FR
+            </button>
+          </div>
         </div>
       </div>
       {!isLanding && (
@@ -75,24 +93,7 @@ function Header() {
   );
 }
 
-/** Page d'accueil / landing : design Calisthenics AI (hero + features + démo). */
 function LandingPage() {
-  const { user, loading } = useAuth();
-  if (loading) return <p className="muted">Chargement...</p>;
-  if (user) {
-    return (
-      <div className="card home-welcome">
-        <h2 className="home-welcome-title">Bienvenue</h2>
-        <p className="muted home-welcome-desc">
-          Vous êtes connecté. Accédez à votre tableau de bord ou lancez une analyse.
-        </p>
-        <div className="buttons">
-          <Link to="/" className="btn btn-primary">Tableau de bord</Link>
-          <Link to="/analyze" className="btn">Analyser une figure</Link>
-        </div>
-      </div>
-    );
-  }
   return <Landing />;
 }
 

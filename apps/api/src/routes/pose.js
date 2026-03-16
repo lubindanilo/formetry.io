@@ -79,14 +79,16 @@ router.post("/classify", async (req, res) => {
 const ConfirmSchema = z.object({
   analysisId: z.string().min(1),
   userId: z.string().min(1),
-  userLabel: z.string().min(1)
+  userLabel: z.string().min(1),
+  // Langue souhaitée pour les feedbacks d'amélioration (ex. "fr", "en-US").
+  lang: z.string().min(2).max(10).optional()
 });
 
 router.post("/confirm", async (req, res) => {
   try {
     const body = ConfirmSchema.parse(req.body);
     const userId = req.user?.id ?? body.userId;
-    const { analysisId, userLabel } = body;
+    const { analysisId, userLabel, lang } = body;
 
     const analysis = await Analysis.findOne({ analysisId, userId }).lean();
     if (!analysis) return res.status(404).json({ error: "Analysis not found" });
@@ -132,7 +134,7 @@ router.post("/confirm", async (req, res) => {
         techniqueScore.improvements = getTopImprovements(
           techniqueScore.dimensions,
           techniqueScore.figure ?? userLabel,
-          { limit: 3 }
+          { limit: 3, lang }
         );
       }
     } catch (scoreErr) {
@@ -181,7 +183,31 @@ router.post("/save-to-dashboard", authRequired, async (req, res) => {
     const { analysisId } = SaveToDashboardSchema.parse(req.body);
     const userId = req.user.id;
 
-    const analysis = await Analysis.findOne({ analysisId, userId }).lean();
+    let analysis = await Analysis.findOne({ analysisId, userId }).lean();
+
+    // Si aucune analyse n'existe encore pour cet utilisateur,
+    // on essaie d'abord de récupérer une analyse anonyme (userId "demo")
+    // puis, en dernier recours, n'importe quelle analyse avec ce même analysisId.
+    if (!analysis) {
+      const anonymous = await Analysis.findOne({ analysisId, userId: "demo" }).lean();
+      if (anonymous) {
+        await Analysis.updateOne(
+          { _id: anonymous._id },
+          { $set: { userId } }
+        );
+        analysis = { ...anonymous, userId };
+      } else {
+        const any = await Analysis.findOne({ analysisId }).lean();
+        if (any) {
+          await Analysis.updateOne(
+            { _id: any._id },
+            { $set: { userId } }
+          );
+          analysis = { ...any, userId };
+        }
+      }
+    }
+
     if (!analysis) return res.status(404).json({ error: "Analyse introuvable." });
     if (analysis.techniqueScoreGlobal == null) {
       return res.status(400).json({ error: "Confirmez d'abord la figure et consultez le score avant de sauvegarder." });

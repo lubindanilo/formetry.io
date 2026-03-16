@@ -1,6 +1,8 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { round4 } from "../../lib/poseSandboxUtils.js";
 import AnalysisDashboard from "./analysis/AnalysisDashboard.jsx";
+import { useTranslation } from "react-i18next";
 
 /** Afficher Confidence, analysisId, s3Key*, Scores debug (debug). */
 const SHOW_RESULT_DEBUG = false;
@@ -26,9 +28,13 @@ export default function PoseResultPanel({
   saveStatus,
   saveError,
 }) {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
   return (
     <>
-      {flowError ? <p className="error">Flow erreur: {flowError}</p> : null}
+      {flowError ? (
+        <p className="error">{t("poseResult.flow_error", { message: flowError })}</p>
+      ) : null}
 
       {!classify ? null : (
         <div style={{ display: "grid", gap: 10 }}>
@@ -40,7 +46,7 @@ export default function PoseResultPanel({
                 fontWeight: 500,
               }}
             >
-              Figure détectée: <span style={{ fontWeight: 600 }}>{classify.pose}</span>
+              {t("poseResult.detected_figure", { pose: classify.pose })}
             </div>
             {SHOW_RESULT_DEBUG ? (
               <>
@@ -96,7 +102,7 @@ export default function PoseResultPanel({
                   color: "#f2f2f2",
                 }}
               >
-                <option value="">Modifier</option>
+                <option value="">{t("poseResult.modifier_option")}</option>
                 {supportedPoses.map((p) => (
                   <option key={p} value={p}>
                     {p}
@@ -115,20 +121,42 @@ export default function PoseResultPanel({
                 fontWeight: 600,
               }}
             >
-              {confirmStatus === "confirming" ? "Confirmation..." : "Confirmer"}
+              {confirmStatus === "confirming"
+                ? t("poseResult.confirming")
+                : t("poseResult.confirm_button")}
             </button>
 
-            {confirmError ? <p className="error">Confirm erreur: {confirmError}</p> : null}
+            {confirmError ? (
+              <p className="error">
+                {t("poseResult.confirm_error", { message: confirmError })}
+              </p>
+            ) : null}
             {confirmStatus === "done" ? (
               <>
                 {techniqueScore?.scores ? (
                   <div style={{ marginTop: 8 }}>
-                    <p style={{ marginBottom: 8, color: "#fff", fontSize: "1.05rem", fontWeight: 500 }}>Résultat d'analyse</p>
+                    <p
+                      style={{
+                        marginBottom: 8,
+                        color: "#fff",
+                        fontSize: "1.05rem",
+                        fontWeight: 500,
+                      }}
+                    >
+                      {t("poseResult.analysis_result_title")}
+                    </p>
                     <AnalysisDashboard scores={techniqueScore.scores} />
                     {Array.isArray(techniqueScore.improvements) && techniqueScore.improvements.length > 0 ? (
                       <div style={{ marginTop: 12 }}>
-                        <p style={{ marginBottom: 6, fontSize: "1.05rem", fontWeight: 500, color: "#fff" }}>
-                          Points d'amélioration
+                        <p
+                          style={{
+                            marginBottom: 6,
+                            fontSize: "1.05rem",
+                            fontWeight: 500,
+                            color: "#fff",
+                          }}
+                        >
+                          {t("poseResult.improvements_title")}
                         </p>
                         <ol
                           className="list"
@@ -150,25 +178,45 @@ export default function PoseResultPanel({
                     ) : null}
                   </div>
                 ) : null}
-                {techniqueScore && isLoggedIn && (
+                {techniqueScore && (
                   <div style={{ marginTop: 14 }}>
-                    {savedToDashboard ? (
-                      <p className="muted" style={{ margin: 0, color: "#22c55e" }}>
-                        Analyse enregistrée dans votre tableau de bord.
-                      </p>
+                    {isLoggedIn ? (
+                      savedToDashboard ? (
+                        <p className="muted" style={{ margin: 0, color: "#22c55e" }}>
+                          {t("poseResult.saved_to_dashboard")}
+                        </p>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            className="btn btn-primary"
+                            onClick={onSaveToDashboard}
+                            disabled={saveStatus === "saving" || !analysisId}
+                            style={{ textDecoration: "none", fontSize: "0.85rem" }}
+                          >
+                            {saveStatus === "saving"
+                              ? t("poseResult.saving")
+                              : t("poseResult.save_button")}
+                          </button>
+                          {saveError ? <p className="error" style={{ marginTop: 8, marginBottom: 0 }}>{saveError}</p> : null}
+                        </>
+                      )
                     ) : (
-                      <>
-                        <button
-                          type="button"
-                          className="btn btn-primary"
-                          onClick={onSaveToDashboard}
-                          disabled={saveStatus === "saving" || !analysisId}
-                          style={{ textDecoration: "none", fontSize: "0.85rem" }}
-                        >
-                          {saveStatus === "saving" ? "Enregistrement..." : "Sauvegarder l'analyse"}
-                        </button>
-                        {saveError ? <p className="error" style={{ marginTop: 8, marginBottom: 0 }}>{saveError}</p> : null}
-                      </>
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={() => {
+                          if (!analysisId) return;
+                          const search = new URLSearchParams({
+                            analysisId: String(analysisId),
+                          }).toString();
+                          navigate(`/register?${search}`);
+                        }}
+                        disabled={!analysisId}
+                        style={{ textDecoration: "none", fontSize: "0.85rem" }}
+                      >
+                        {t("poseResult.save_and_create_button")}
+                      </button>
                     )}
                   </div>
                 )}

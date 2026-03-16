@@ -1,6 +1,14 @@
+const path = require("path");
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
+const dotenv = require("dotenv");
+
+// Charger le .env à la racine du monorepo (ai-form-coach/.env).
+// __dirname = apps/api/src → ../.. = apps → ../../.. = racine du repo.
+dotenv.config({
+  path: path.resolve(__dirname, "..", "..", "..", ".env")
+});
 
 const { connectMongo } = require("./db");
 const { authOptional } = require("./middleware/auth");

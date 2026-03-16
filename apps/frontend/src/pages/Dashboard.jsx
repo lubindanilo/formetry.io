@@ -1,10 +1,14 @@
 import React, { useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { getScoreLabel, getScoreColor } from "../components/pose/analysis/scoreTheme.js";
+import { useTranslation } from "react-i18next";
+import { fetchJson } from "../lib/poseSandboxUtils.js";
 
 export default function Dashboard() {
-  const { user, refreshMe } = useAuth();
+  const { user, refreshMe, logout } = useAuth();
+  const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
 
   useEffect(() => {
     refreshMe();
@@ -46,11 +50,27 @@ export default function Dashboard() {
     return map;
   }, [history]);
 
+  async function handleDeleteAccount() {
+    if (!window.confirm(t("dashboard.delete_account_confirm"))) return;
+    try {
+      await fetchJson("/api/auth/delete-account", {
+        method: "DELETE",
+      });
+      await logout();
+      navigate("/", { replace: true });
+    } catch (err) {
+      // Simple fallback : une alerte. On pourrait ajouter un message dédié dans l'UI si besoin.
+      alert(err?.message || t("dashboard.delete_account_error"));
+    }
+  }
+
   return (
     <section className="dashboard">
       <div className="dashboard-header">
         <h2>
-          Bonjour{user?.displayName ? ` ${user.displayName}` : ""}
+          {user?.displayName
+            ? t("dashboard.greeting", { name: user.displayName })
+            : t("dashboard.greeting_no_name")}
         </h2>
         <p className="muted">
           {user?.email}
@@ -58,35 +78,37 @@ export default function Dashboard() {
       </div>
 
       <div className="dashboard-stats card">
-        <h3>Votre niveau</h3>
+        <h3>{t("dashboard.level_title")}</h3>
         {levelLabel != null ? (
           <p className="dashboard-level" style={{ color: levelColor ?? undefined }}>
-            {levelLabel}
+            {t(levelLabel)}
           </p>
         ) : (
-          <p className="muted">Effectuez une analyse pour voir votre niveau global.</p>
+          <p className="muted">{t("dashboard.level_empty")}</p>
         )}
         {averageScore != null && (
-          <p className="muted">Score moyen : {averageScore}/100 </p>
+          <p className="muted">
+            {t("dashboard.average_score", { score: averageScore })}
+          </p>
         )}
       </div>
 
       <div className="dashboard-actions">
         <Link to="/analyze" className="btn btn-primary">
-          Nouvelle analyse
+          {t("common.new_analysis")}
         </Link>
       </div>
 
       <div className="dashboard-history card">
-        <h3>Dernières analyses</h3>
+        <h3>{t("dashboard.history_title")}</h3>
         {recent.length === 0 ? (
-          <p className="muted">Aucune analyse pour le moment. Lancez une analyse pour enregistrer votre progression.</p>
+          <p className="muted">{t("dashboard.history_empty")}</p>
         ) : (
           <ul className="history-list">
             {recent.map((entry, i) => (
               <li key={entry.date + (entry.analysisId || "") + i} className="history-item">
                 <span className="history-date">
-                  {new Date(entry.date).toLocaleDateString("fr-FR", {
+                  {new Date(entry.date).toLocaleDateString(i18n.language || undefined, {
                     day: "numeric",
                     month: "short",
                     year: "numeric",
@@ -118,9 +140,9 @@ export default function Dashboard() {
       </div>
 
       <div className="dashboard-progression card">
-        <h3>Progression par figure</h3>
+        <h3>{t("dashboard.progression_title")}</h3>
         {byFigure.size === 0 ? (
-          <p className="muted">Aucune analyse pour le moment. Lancez une analyse pour voir votre progression par figure.</p>
+          <p className="muted">{t("dashboard.progression_empty")}</p>
         ) : (
           <div className="progression-by-figure">
             {Array.from(byFigure.entries())
@@ -129,40 +151,63 @@ export default function Dashboard() {
                 const scores = entries
                   .map((e) => (typeof e.scoreGlobal === "number" ? e.scoreGlobal : null))
                   .filter((s) => s !== null);
-                const hasTrend = scores.length >= 2;
                 return (
                   <div key={figure} className="progression-figure-block">
                     <h4 className="progression-figure-title">{formatFigureLabel(figure)}</h4>
-                    {!hasTrend ? (
+                    {scores.length === 0 ? (
                       <p className="muted progression-figure-empty">
-                        {scores.length === 1
-                          ? `1 analyse : ${scores[0]}/100`
-                          : "Au moins deux analyses pour voir la tendance."}
+                        {t("dashboard.progression_need_two")}
                       </p>
                     ) : (
-                      <div className="progression-chart">
-                        {scores.map((s, i) => (
-                          <div
-                            key={i}
-                            className="progression-bar-wrap"
-                            title={`${s}/100`}
-                          >
+                      <>
+                        {scores.length === 1 ? (
+                          <p className="muted progression-figure-empty">
+                            {t("dashboard.progression_one_analysis", {
+                              score: scores[0],
+                            })}
+                          </p>
+                        ) : null}
+                        <div className="progression-chart">
+                          {scores.map((s, i) => (
                             <div
-                              className="progression-bar"
-                              style={{
-                                width: `${s}%`,
-                                backgroundColor: getScoreColor(s),
-                              }}
-                            />
-                          </div>
-                        ))}
-                      </div>
+                              key={i}
+                              className="progression-bar-wrap"
+                              title={`${s}/100`}
+                            >
+                              <div
+                                className="progression-bar"
+                                style={{
+                                  width: `${s}%`,
+                                  backgroundColor: getScoreColor(s),
+                                }}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </>
                     )}
                   </div>
                 );
               })}
           </div>
         )}
+      </div>
+
+      <div
+        className="dashboard-delete-account"
+        style={{
+          marginTop: 24,
+          display: "flex",
+          justifyContent: "flex-end",
+        }}
+      >
+        <button
+          type="button"
+          className="btn"
+          onClick={handleDeleteAccount}
+        >
+          {t("dashboard.delete_account_button")}
+        </button>
       </div>
     </section>
   );

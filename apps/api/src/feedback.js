@@ -1,8 +1,9 @@
 /**
  * Dérive les top N points d'amélioration à partir des dimensions de scoring.
- * Utilise improvementFeedback.json pour résoudre (figure, metricKey) → message.
+ * Utilise les fichiers improvementFeedback*.json pour résoudre (figure, metricKey) → message.
  */
 const improvementFeedback = require("./improvementFeedback.json");
+const improvementFeedbackEn = require("./improvementFeedback.en.json");
 
 const FIGURE_ALIASES = {
   l_sit: "lsit",
@@ -24,16 +25,23 @@ function normalizeFigureName(name) {
  *
  * @param {Record<string, { metrics: Array<{ name: string, score: number, confidence?: number }> }>} dimensions
  * @param {string} figure - Nom de la figure (ex. "lsit", "handstand")
- * @param {{ limit?: number, minConfidence?: number }} options
+ * @param {{ limit?: number, minConfidence?: number, lang?: string }} options
  * @returns {Array<{ message: string, metricKey: string, dimensionKey: string, score: number }>}
  */
 function getTopImprovements(dimensions, figure, options = {}) {
   const limit = options.limit ?? DEFAULT_LIMIT;
   const minConfidence = options.minConfidence ?? DEFAULT_MIN_CONFIDENCE;
+  const lang = typeof options.lang === "string" ? options.lang.toLowerCase() : "";
+  const useEn = lang.startsWith("en");
 
   if (!dimensions || typeof dimensions !== "object") return [];
   const figureKey = normalizeFigureName(figure);
-  const messagesByMetric = improvementFeedback[figureKey];
+
+  const perFigureFr = improvementFeedback[figureKey] || {};
+  const perFigureEn = improvementFeedbackEn[figureKey] || {};
+  const base = useEn ? perFigureEn : perFigureFr;
+  const fallback = useEn ? perFigureFr : perFigureEn;
+  const messagesByMetric = Object.keys(base).length > 0 ? base : fallback;
   if (!messagesByMetric) return [];
 
   const candidates = [];
@@ -66,5 +74,6 @@ function getTopImprovements(dimensions, figure, options = {}) {
 module.exports = {
   getTopImprovements,
   normalizeFigureName,
-  improvementFeedback
+  improvementFeedback,
+  improvementFeedbackEn
 };

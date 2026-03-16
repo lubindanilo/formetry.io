@@ -5,15 +5,17 @@
  */
 export const GLOBAL_KEY = "global";
 
-/** Ordre d'affichage et libellés des métriques (hors score global) */
+/** Ordre d'affichage et libellés des métriques (hors score global).
+ * Le label est une clé d'i18n pour permettre la traduction.
+ */
 export const DIMENSION_METRICS = [
-  { key: "body_line", label: "Alignement corporel" },
-  { key: "symmetry", label: "Symétrie" },
-  { key: "lockout_extension", label: "Extension des membres" },
+  { key: "body_line", label: "metrics.body_line" },
+  { key: "symmetry", label: "metrics.symmetry" },
+  { key: "lockout_extension", label: "metrics.lockout_extension" },
 ];
 
-/** Libellé du score global (titre section / jauge circulaire) */
-export const GLOBAL_LABEL = "Score Global";
+/** Libellé du score global (clé i18n du titre section / jauge circulaire) */
+export const GLOBAL_LABEL = "metrics.global";
 
 /** Score max affiché (sur 100) */
 export const SCORE_MAX = 100;

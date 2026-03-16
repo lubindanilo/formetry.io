@@ -3,6 +3,7 @@ const { z } = require("zod");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const Analysis = require("../models/Analysis");
 const { authRequired, COOKIE_NAME } = require("../middleware/auth");
 
 const router = express.Router();
@@ -137,6 +138,24 @@ router.get("/me", authRequired, async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ error: err.message || "Server Error" });
+  }
+});
+
+/**
+ * DELETE /api/auth/delete-account
+ * Supprime le compte utilisateur courant et les analyses associées.
+ */
+router.delete("/delete-account", authRequired, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    await Analysis.deleteMany({ userId });
+    await User.deleteOne({ _id: userId });
+
+    res.clearCookie(COOKIE_NAME, { path: "/", httpOnly: true, sameSite: "lax" });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message || "Unable to delete account." });
   }
 });
 

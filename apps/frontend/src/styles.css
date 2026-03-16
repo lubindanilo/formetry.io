@@ -398,7 +398,7 @@ body {
 .header-nav-links {
   display: flex;
   align-items: center;
-  gap: 30px;
+  gap: 18px;
 }
 
 .header-nav-links a {
@@ -423,6 +423,38 @@ body {
 
 .header-nav-links .header-nav-link-btn:hover {
   color: #f2f2f2;
+}
+
+/* Language switcher */
+.header-lang-switch {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  border-radius: 999px;
+  background: rgba(24, 24, 27, 0.9);
+  border: 1px solid #27272a;
+  gap: 2px;
+}
+
+.header-lang-switch button {
+  border: none;
+  background: transparent;
+  color: #a1a1aa;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+}
+
+.header-lang-switch button:hover {
+  color: #e5e5e5;
+}
+
+.header-lang-active {
+  background: #4f46e5;
+  color: #ffffff !important;
 }
 
 @media (max-width: 768px) {
@@ -490,6 +522,10 @@ body {
   grid-column: 1 / -1;
   grid-row: 4;
 }
+.dashboard-delete-account {
+  grid-column: 1 / -1;
+  grid-row: 5;
+}
 @media (max-width: 720px) {
   .dashboard {
     grid-template-columns: 1fr;
@@ -499,6 +535,7 @@ body {
   .dashboard-actions { grid-column: 1; grid-row: 3; }
   .dashboard-history { grid-column: 1; grid-row: 4; }
   .dashboard-progression { grid-column: 1; grid-row: 5; }
+  .dashboard-delete-account { grid-column: 1; grid-row: 6; }
 }
 .dashboard-header h2 {
   margin: 0 0 2px 0;

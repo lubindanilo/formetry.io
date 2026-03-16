@@ -17,6 +17,7 @@ import {
   round4,
   safeDetectForImage,
 } from "../lib/poseSandboxUtils.js";
+import { useTranslation } from "react-i18next";
 
 const KEYPOINTS = [
   // Core strength joints
@@ -82,6 +83,7 @@ export default function PoseSandbox(props) {
   const [saveStatus, setSaveStatus] = useState("idle"); // idle | saving | done | error
   const [saveError, setSaveError] = useState("");
   const { refreshMe } = useAuth();
+  const { t, i18n } = useTranslation();
 
   const modelFullPath = useMemo(() => "/models/pose_landmarker_full.task", []);
   const modelLitePath = useMemo(() => "/models/pose_landmarker_lite.task", []);
@@ -350,6 +352,8 @@ export default function PoseSandbox(props) {
       setDatasetSampleId(null);
       setTechniqueScore(null);
 
+      const lang = i18n.language || "en";
+
       const out = await fetchJson("/api/pose/confirm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -357,6 +361,7 @@ export default function PoseSandbox(props) {
           analysisId,
           userId: userId.trim(),
           userLabel: userLabel.trim(),
+          lang,
         }),
       });
 
@@ -459,7 +464,7 @@ export default function PoseSandbox(props) {
         }}
       />
 
-      {error ? <p className="error">Erreur: {error}</p> : null}
+      {error ? <p className="error">{t("analyze.error_prefix", { message: error })}</p> : null}
 
       <div className="stage">
         <div className="videoWrap">
@@ -493,9 +498,9 @@ export default function PoseSandbox(props) {
                   <polyline points="17 8 12 3 7 8" />
                   <line x1="12" y1="3" x2="12" y2="15" />
                 </svg>
-                <span className="uploadZoneText">Cliquez pour uploader votre image</span>
+                <span className="uploadZoneText">{t("analyze.upload_title")}</span>
                 <span className="uploadZoneHint">
-                  Choisissez une photo prise bien de profil, avec le corps entier visible.
+                  {t("analyze.upload_hint")}
                 </span>
               </span>
             ) : null}

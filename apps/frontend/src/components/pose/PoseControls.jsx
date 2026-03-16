@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 /** Afficher la ligne Status / Active model / File / Size / Flow (debug). */
 const SHOW_STATUS_META = false;
@@ -11,11 +12,12 @@ export default function PoseControls({
   fileDisabled,
   onClear,
 }) {
+  const { t } = useTranslation();
   return (
     <div className="controls">
       <div className="buttons" style={{ gap: 10, display: "flex", flexWrap: "wrap" }}>
         <button className="btn" onClick={onClear} disabled={fileDisabled}>
-          Réinitialiser
+          {t("analyze.reset")}
         </button>
       </div>
 

@@ -4,12 +4,12 @@
  */
 
 const BANDS = [
-  { min: 90, max: 100, color: "#047857", colorLight: "#059669", label: "Excellent" },
-  { min: 80, max: 89, color: "#16a34a", colorLight: "#22c55e", label: "Très bien" },
-  { min: 70, max: 79, color: "#65a30d", colorLight: "#84cc16", label: "Bien" },
-  { min: 55, max: 69, color: "#ea580c", colorLight: "#f97316", label: "Correct" },
-  { min: 40, max: 54, color: "#c2410c", colorLight: "#ea580c", label: "Fragile" },
-  { min: 0, max: 39, color: "#b91c1c", colorLight: "#dc2626", label: "À retravailler" },
+  { min: 90, max: 100, color: "#047857", colorLight: "#059669", label: "score.excellent" },
+  { min: 80, max: 89, color: "#16a34a", colorLight: "#22c55e", label: "score.very_good" },
+  { min: 70, max: 79, color: "#65a30d", colorLight: "#84cc16", label: "score.good" },
+  { min: 55, max: 69, color: "#ea580c", colorLight: "#f97316", label: "score.fair" },
+  { min: 40, max: 54, color: "#c2410c", colorLight: "#ea580c", label: "score.fragile" },
+  { min: 0, max: 39, color: "#b91c1c", colorLight: "#dc2626", label: "score.to_improve" },
 ];
 
 /** Score maximum utilisé pour les bandes */
@@ -64,7 +64,7 @@ export function getScoreColorLight(score) {
 }
 
 /**
- * Retourne le libellé qualitatif du score (ex. "Très bien").
+ * Retourne la clé i18n du libellé qualitatif du score (ex. "score.very_good").
  * @param {number} score - Score entre 0 et 100
  * @returns {string}
  */
