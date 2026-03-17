@@ -8,7 +8,7 @@ const resources = {
   fr: {
     translation: {
       header: {
-        brand: "Calisthenics AI",
+        brand: "Formetry",
         menu_open: "Ouvrir le menu",
         home: "Accueil",
         dashboard: "Tableau de bord",
@@ -155,7 +155,7 @@ const resources = {
   en: {
     translation: {
       header: {
-        brand: "Calisthenics AI",
+        brand: "Formetry",
         menu_open: "Open menu",
         home: "Home",
         dashboard: "Dashboard",
