@@ -1,4 +1,4 @@
-const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
+const { S3Client, PutObjectCommand, GetObjectCommand } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 
 function makeS3Client() {
@@ -15,6 +15,15 @@ async function presignPutObject({ bucket, key, contentType, expiresIn = 120 }) {
   return await getSignedUrl(s3, cmd, { expiresIn });
 }
 
+async function presignGetObject({ bucket, key, expiresIn = 600 }) {
+  const s3 = makeS3Client();
+  const cmd = new GetObjectCommand({
+    Bucket: bucket,
+    Key: key
+  });
+  return await getSignedUrl(s3, cmd, { expiresIn });
+}
+
 async function putJson({ bucket, key, obj }) {
   const s3 = makeS3Client();
   const body = Buffer.from(JSON.stringify(obj, null, 2), "utf-8");
@@ -26,4 +35,4 @@ async function putJson({ bucket, key, obj }) {
   }));
 }
 
-module.exports = { presignPutObject, putJson };
+module.exports = { presignPutObject, presignGetObject, putJson };

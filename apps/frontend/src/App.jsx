@@ -6,11 +6,12 @@ import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Landing from "./pages/Landing.jsx";
+import Blog from "./pages/Blog.jsx";
+import AnalysisDetail from "./pages/AnalysisDetail.jsx";
 import { useTranslation } from "react-i18next";
 
 function Header() {
-  const { user, loading, logout } = useAuth();
-  const navigate = useNavigate();
+  const { user, loading } = useAuth();
   const location = useLocation();
   const isLanding = location.pathname === "/" && !user;
   const [isMenuOpen, setMenuOpen] = useState(false);
@@ -19,11 +20,6 @@ function Header() {
   useEffect(() => {
     setMenuOpen(false);
   }, [location.pathname]);
-
-  async function handleLogout() {
-    await logout();
-    navigate("/", { replace: true });
-  }
 
   return (
     <header className={`header ${isMenuOpen ? "header--menu-open" : ""}`}>
@@ -49,17 +45,8 @@ function Header() {
               <Link to="/accueil">{t("header.home")}</Link>
               {user ? <Link to="/">{t("header.dashboard")}</Link> : null}
               <Link to="/analyze">{t("header.analyze")}</Link>
-              {user ? (
-                <>
-                  <button
-                    type="button"
-                    className="header-nav-link-btn"
-                    onClick={handleLogout}
-                  >
-                    {t("header.logout")}
-                  </button>
-                </>
-              ) : (
+              <Link to="/blog">{t("header.blog")}</Link>
+              {user ? null : (
                 <>
                   <Link to="/login">{t("header.login")}</Link>
                   <Link to="/register">{t("header.register")}</Link>
@@ -107,9 +94,11 @@ function HomePage() {
 function AnalyzePage() {
   const { user } = useAuth();
   const userId = user?.id ?? "demo";
-  return (
-    <PoseSandbox userId={userId} />
-  );
+  return <PoseSandbox userId={userId} />;
+}
+
+function BlogPage() {
+  return <Blog />;
 }
 
 export default function App() {
@@ -123,6 +112,8 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/analyze" element={<AnalyzePage />} />
+          <Route path="/analysis/:analysisId" element={<AnalysisDetail />} />
+          <Route path="/blog" element={<BlogPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

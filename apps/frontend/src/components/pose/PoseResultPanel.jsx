@@ -40,8 +40,8 @@ export default function PoseResultPanel({
         <div style={{ display: "grid", gap: 10 }}>
           <div className="muted">
             <div
+              className="pose-detected-figure"
               style={{
-                fontSize: "1.5rem",
                 fontFamily: "'Segoe UI', system-ui, sans-serif",
                 fontWeight: 500,
               }}
@@ -145,10 +145,11 @@ export default function PoseResultPanel({
                     >
                       {t("poseResult.analysis_result_title")}
                     </p>
-                    <AnalysisDashboard scores={techniqueScore.scores} />
+                    <AnalysisDashboard scores={techniqueScore.scores} improvements={techniqueScore.improvements?.map((i) => i.message || "").filter(Boolean)} />
                     {Array.isArray(techniqueScore.improvements) && techniqueScore.improvements.length > 0 ? (
                       <div style={{ marginTop: 12 }}>
                         <p
+                          className="pose-improvements-title"
                           style={{
                             marginBottom: 6,
                             fontSize: "1.05rem",
@@ -159,10 +160,11 @@ export default function PoseResultPanel({
                           {t("poseResult.improvements_title")}
                         </p>
                         <ol
-                          className="list"
+                          className="list pose-improvements-list"
                           style={{
                             margin: 0,
                             paddingLeft: 20,
+                            paddingRight: 4,
                             display: "flex",
                             flexDirection: "column",
                             gap: 6,

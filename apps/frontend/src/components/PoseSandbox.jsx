@@ -85,6 +85,19 @@ export default function PoseSandbox(props) {
   const { refreshMe } = useAuth();
   const { t, i18n } = useTranslation();
 
+  // Mobile detection (to adjust some UI like hiding empty result panel)
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    function updateIsMobile() {
+      if (typeof window === "undefined") return;
+      setIsMobile(window.innerWidth <= 768);
+    }
+    updateIsMobile();
+    window.addEventListener("resize", updateIsMobile);
+    return () => window.removeEventListener("resize", updateIsMobile);
+  }, []);
+
   const modelFullPath = useMemo(() => "/models/pose_landmarker_full.task", []);
   const modelLitePath = useMemo(() => "/models/pose_landmarker_lite.task", []);
 
@@ -427,6 +440,9 @@ export default function PoseSandbox(props) {
 
   const fileDisabled = status === "loading" || flowStatus === "uploading" || flowStatus === "classifying" || flowStatus === "presign";
 
+  const hasImageDimensions = imageInfo.w > 0 && imageInfo.h > 0;
+  const previewAspectRatio = hasImageDimensions ? `${imageInfo.w} / ${imageInfo.h}` : "16 / 9";
+
   return (
     <section className="card">
       <AnalyzeStepper currentStep={stepperStep} />
@@ -467,7 +483,7 @@ export default function PoseSandbox(props) {
       {error ? <p className="error">{t("analyze.error_prefix", { message: error })}</p> : null}
 
       <div className="stage">
-        <div className="videoWrap">
+        <div className="videoWrap" style={{ aspectRatio: previewAspectRatio }}>
           <label
             className="uploadZone"
             style={{
@@ -508,45 +524,47 @@ export default function PoseSandbox(props) {
           </label>
         </div>
 
-        <div className="panel">
-          <PoseResultPanel
-            classify={classify}
-            flowError={flowError}
-            userLabel={userLabel}
-            setUserLabel={setUserLabel}
-            supportedPoses={SUPPORTED_POSES}
-            confirmLabel={confirmLabel}
-            confirmStatus={confirmStatus}
-            confirmError={confirmError}
-            techniqueScore={techniqueScore}
-            analysisId={presign?.analysisId || classify?.analysisId}
-            isLoggedIn={userId !== "demo"}
-            savedToDashboard={savedToDashboard}
-            onSaveToDashboard={saveToDashboard}
-            saveStatus={saveStatus}
-            saveError={saveError}
-          />
+        {(!isMobile || imageUrl) && (
+          <div className="panel">
+            <PoseResultPanel
+              classify={classify}
+              flowError={flowError}
+              userLabel={userLabel}
+              setUserLabel={setUserLabel}
+              supportedPoses={SUPPORTED_POSES}
+              confirmLabel={confirmLabel}
+              confirmStatus={confirmStatus}
+              confirmError={confirmError}
+              techniqueScore={techniqueScore}
+              analysisId={presign?.analysisId || classify?.analysisId}
+              isLoggedIn={userId !== "demo"}
+              savedToDashboard={savedToDashboard}
+              onSaveToDashboard={saveToDashboard}
+              saveStatus={saveStatus}
+              saveError={saveError}
+            />
 
-          {SHOW_KEYPOINT_PANELS ? (
-            <>
-              <PoseKeypointsPanel
-                title="Points natifs utiles (extrait)"
-                emptyText={imageUrl ? "Aucune pose détectée sur cette photo." : "Upload une photo pour voir les points."}
-                rows={preview}
-              />
+            {SHOW_KEYPOINT_PANELS ? (
+              <>
+                <PoseKeypointsPanel
+                  title="Points natifs utiles (extrait)"
+                  emptyText={imageUrl ? "Aucune pose détectée sur cette photo." : "Upload une photo pour voir les points."}
+                  rows={preview}
+                />
 
-              <PoseKeypointsPanel
-                title="Points dérivés (virtual landmarks)"
-                emptyText="Ils apparaîtront dès qu’une pose est détectée."
-                rows={derivedPreview}
-              />
+                <PoseKeypointsPanel
+                  title="Points dérivés (virtual landmarks)"
+                  emptyText="Ils apparaîtront dès qu’une pose est détectée."
+                  rows={derivedPreview}
+                />
 
-              <p className="muted" style={{ marginTop: 10 }}>
-                Important: ces points dérivés peuvent aussi être recalculés côté scoring (Python) à partir des 33 natifs.
-              </p>
-            </>
-          ) : null}
-        </div>
+                <p className="muted" style={{ marginTop: 10 }}>
+                  Important: ces points dérivés peuvent aussi être recalculés côté scoring (Python) à partir des 33 natifs.
+                </p>
+              </>
+            ) : null}
+          </div>
+        )}
       </div>
     </section>
   );

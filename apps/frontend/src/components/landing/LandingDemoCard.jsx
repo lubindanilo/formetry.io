@@ -30,7 +30,7 @@ export default function LandingDemoCard() {
         <div className="landing-demo-card__image-placeholder">
           <img
             src="/landing.png"
-            alt="Exemple d'analyse de posture calisthénie"
+            alt="Exemple d'analyse de posture en calisthénie"
             className="landing-demo-card__image"
           />
         </div>

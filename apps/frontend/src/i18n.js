@@ -13,6 +13,7 @@ const resources = {
         home: "Accueil",
         dashboard: "Tableau de bord",
         analyze: "Analyser une figure",
+        blog: "Blog",
         logout: "Déconnexion",
         login: "Connexion",
         register: "Créer un compte",
@@ -31,26 +32,36 @@ const resources = {
       },
       landing: {
         hero_title:
-          "Découvres exactement quoi corriger sur tes figures de calisthénie et progresse plus vite",
+          "Découvre exactement quoi corriger sur tes figures de calisthénie et progresse plus vite",
         hero_desc:
           "Importe une photo, obtiens un score technique clair et 3 corrections immédiatement applicables.",
+        figures_section_title: "Figures détectables par notre algorithme",
+        figures_section_subtitle:
+          "Nous commençons avec les figures les plus emblématiques de la calisthénie. D’autres seront ajoutées au fur et à mesure.",
+        figures_lsit: "L-Sit",
+        figures_handstand: "Handstand",
+        figures_planche: "Full Planche",
+        figures_front_lever: "Front Lever",
+        figures_back_lever: "Back Lever",
+        figures_elbow_lever: "Elbow Lever",
+        figures_human_flag: "Human Flag",
         feature_diagnostic_title: "Diagnostic immédiat",
         feature_diagnostic_desc:
-          "Upload ta photo et obtiens instantanément une analyse claire de ta figure, comme avec un coach personnel.",
+          "Importe ta photo et obtiens instantanément une analyse claire de ta figure, comme avec un coach personnel.",
         feature_understand_title: "Comprends exactement ce qui te bloque",
         feature_understand_desc:
           "Un score global et des métriques détaillées pour voir en un coup d’œil ce qui freine ta posture.",
         feature_progress_title: "Mesure ta progression dans le temps",
         feature_progress_desc:
           "Compare tes analyses, vois ce qui s’améliore réellement et valide objectivement tes progrès sur chaque figure.",
-        demo_detected_figure: "Figure détectée",
+        demo_detected_figure: "Figure détectée ",
         demo_improvements_title: "Points d'amélioration",
         demo_improvement_1:
-          "Remonte légèrement le bassin — Gagne quelques centimètres pour obtenir une horizontale vraiment parfaite.",
+          "Remonte légèrement le bassin — gagne quelques centimètres pour obtenir une horizontale vraiment parfaite.",
         demo_improvement_2:
-          "Verrouille davantage le bras du haut — Tends complètement le coude pour renforcer la ligne et rendre la position plus propre.",
+          "Verrouille davantage le bras du haut — tends complètement le coude pour renforcer la ligne et rendre la position plus propre.",
         demo_improvement_3:
-          "Serre davantage les jambes — Garde-les complètement collées pour créer une ligne plus nette et plus élégante.",
+          "Serre davantage les jambes — garde-les complètement collées pour créer une ligne plus nette et plus élégante.",
       },
       home: {
         welcome_title: "Bienvenue",
@@ -67,6 +78,11 @@ const resources = {
         history_title: "Dernières analyses",
         history_empty:
           "Aucune analyse pour le moment. Lancez une analyse pour enregistrer votre progression.",
+        history_show_all: "Tout voir",
+        history_show_less: "Voir moins",
+        history_view: "Voir",
+        history_detail_title: "Détail de l'analyse",
+        history_back_to_dashboard: "Retour au tableau de bord",
         progression_title: "Progression par figure",
         progression_empty:
           "Aucune analyse pour le moment. Lancez une analyse pour voir votre progression par figure.",
@@ -86,7 +102,7 @@ const resources = {
         reset: "Réinitialiser",
         upload_title: "Cliquez pour uploader votre image",
         upload_hint:
-          "Choisissez une photo prise bien de profil, avec le corps entier visible.",
+          "Choisissez une photo prise parfaitement de profil, avec le corps entier visible.",
         error_prefix: "Erreur: {{message}}",
       },
       score: {
@@ -122,7 +138,7 @@ const resources = {
       },
       poseResult: {
         flow_error: "Flow erreur: {{message}}",
-        detected_figure: "Figure détectée: {{pose}}",
+        detected_figure: "Figure détectée : {{pose}}",
         modifier_option: "Modifier",
         confirm_button: "Confirmer",
         confirming: "Confirmation...",
@@ -144,6 +160,7 @@ const resources = {
         home: "Home",
         dashboard: "Dashboard",
         analyze: "Analyze a move",
+        blog: "Blog",
         logout: "Log out",
         login: "Log in",
         register: "Sign up",
@@ -165,6 +182,16 @@ const resources = {
           "See exactly what to fix on your calisthenics skills and progress faster",
         hero_desc:
           "Upload a picture, get a clear technical score and 3 immediately actionable corrections.",
+        figures_section_title: "Figures detectable by our algorithm",
+        figures_section_subtitle:
+          "We start with the most iconic calisthenics skills, and will add more over time.",
+        figures_lsit: "L-Sit",
+        figures_handstand: "Handstand",
+        figures_planche: "Full Planche",
+        figures_front_lever: "Front Lever",
+        figures_back_lever: "Back Lever",
+        figures_elbow_lever: "Elbow Lever",
+        figures_human_flag: "Human Flag",
         feature_diagnostic_title: "Instant diagnostic",
         feature_diagnostic_desc:
           "Upload your picture and instantly get a clear analysis, like having a personal coach.",
@@ -177,11 +204,11 @@ const resources = {
         demo_detected_figure: "Detected figure",
         demo_improvements_title: "Improvement points",
         demo_improvement_1:
-          "Slightly lift your hips — Gain a few centimeters to reach a truly horizontal line.",
+          "Slightly lift your hips — gain a few centimeters to reach a truly horizontal line.",
         demo_improvement_2:
-          "Lock the top arm harder — Fully extend the elbow to strengthen the line and make the position cleaner.",
+          "Lock the top arm harder — fully extend the elbow to strengthen the line and make the position cleaner.",
         demo_improvement_3:
-          "Squeeze your legs together — Keep them fully glued to create a cleaner, more elegant line.",
+          "Squeeze your legs together — keep them fully glued to create a cleaner, more elegant line.",
       },
       home: {
         welcome_title: "Welcome",
@@ -198,6 +225,11 @@ const resources = {
         history_title: "Latest analyses",
         history_empty:
           "No analysis yet. Run one to start tracking your progress.",
+        history_show_all: "Show all",
+        history_show_less: "Show less",
+        history_view: "View",
+        history_detail_title: "Analysis detail",
+        history_back_to_dashboard: "Back to dashboard",
         progression_title: "Progress by figure",
         progression_empty:
           "No analysis yet. Run one to see your progress by figure.",
@@ -217,7 +249,7 @@ const resources = {
         reset: "Reset",
         upload_title: "Click to upload your picture",
         upload_hint:
-          "Choose a side view photo where your whole body is visible.",
+          "Choose a perfectly profile view photo where your whole body is visible.",
         error_prefix: "Error: {{message}}",
       },
       score: {

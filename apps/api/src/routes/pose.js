@@ -4,7 +4,7 @@ const mongoose = require("mongoose");
 const Analysis = require("../models/Analysis");
 const User = require("../models/User");
 const { classifyPose, scoreTechnique } = require("../scoring");
-const { putJson } = require("../s3");
+const { putJson, presignGetObject } = require("../s3");
 const { getTopImprovements } = require("../feedback");
 const { getScoreLabel } = require("../lib/scoreLabel");
 const { authRequired } = require("../middleware/auth");
@@ -236,6 +236,83 @@ router.post("/save-to-dashboard", authRequired, async (req, res) => {
     if (err.name === "ZodError") {
       return res.status(400).json({ error: "analysisId requis." });
     }
+    res.status(400).json({ error: err.message || "Bad Request" });
+  }
+});
+
+router.get("/history/:analysisId", authRequired, async (req, res) => {
+  try {
+    const { analysisId } = req.params;
+    const userId = req.user.id;
+
+    const analysis = await Analysis.findOne({ analysisId, userId }).lean();
+    if (!analysis) {
+      return res.status(404).json({ error: "Analyse introuvable." });
+    }
+    if (!analysis.landmarks || analysis.landmarks.length !== 33) {
+      return res.status(400).json({ error: "Landmarks manquants pour cette analyse." });
+    }
+    if (!analysis.userLabel) {
+      return res.status(400).json({ error: "Aucun label confirmé pour cette analyse." });
+    }
+
+    const bucket = process.env.S3_BUCKET;
+    const imageUrl =
+      bucket && analysis.s3KeyImage
+        ? await presignGetObject({ bucket, key: analysis.s3KeyImage, expiresIn: 600 })
+        : null;
+
+    let techniqueScore = null;
+    try {
+      techniqueScore = await scoreTechnique({
+        figure: analysis.userLabel,
+        landmarks: analysis.landmarks
+      });
+      if (techniqueScore?.dimensions) {
+        techniqueScore.improvements = getTopImprovements(
+          techniqueScore.dimensions,
+          techniqueScore.figure ?? analysis.userLabel,
+          { limit: 3 }
+        );
+      }
+    } catch (scoreErr) {
+      console.error("Error while calling scoring service in /api/pose/history:", scoreErr);
+      techniqueScore = null;
+    }
+
+    const scoreGlobal =
+      typeof analysis.techniqueScoreGlobal === "number"
+        ? analysis.techniqueScoreGlobal
+        : techniqueScore?.scores?.global ?? null;
+
+    const scoreMetrics =
+      analysis.techniqueScoreMetrics && Object.keys(analysis.techniqueScoreMetrics).length > 0
+        ? analysis.techniqueScoreMetrics
+        : techniqueScore?.scores || {};
+
+    const feedbackGlobal =
+      scoreGlobal != null
+        ? getScoreLabel(scoreGlobal)
+        : undefined;
+
+    const topFeedbacks =
+      Array.isArray(analysis.techniqueImprovements) && analysis.techniqueImprovements.length > 0
+        ? analysis.techniqueImprovements
+        : (techniqueScore?.improvements || []).map((i) => i.message || "");
+
+    res.json({
+      analysisId,
+      userLabel: analysis.userLabel,
+      date: analysis.createdAt ? analysis.createdAt.toISOString() : new Date().toISOString(),
+      imageUrl,
+      techniqueScore,
+      scoreGlobal,
+      scoreMetrics,
+      feedbackGlobal,
+      topFeedbacks
+    });
+  } catch (err) {
+    console.error("Error in /api/pose/history/:analysisId:", err);
     res.status(400).json({ error: err.message || "Bad Request" });
   }
 });

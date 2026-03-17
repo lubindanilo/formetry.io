@@ -1,14 +1,14 @@
 /**
- * Bands de score 0–100 → libellé qualitatif (aligné avec le frontend scoreTheme).
- * Utilisé pour stocker feedbackGlobal dans posture_history.
+ * Bands de score 0–100 → clé i18n (aligné avec le frontend scoreTheme).
+ * Utilisé pour stocker feedbackGlobal dans posture_history. Le frontend affiche via t(key).
  */
 const BANDS = [
-  { min: 90, max: 100, label: "Excellent" },
-  { min: 80, max: 89, label: "Très bien" },
-  { min: 70, max: 79, label: "Bien" },
-  { min: 55, max: 69, label: "Correct" },
-  { min: 40, max: 54, label: "Fragile" },
-  { min: 0, max: 39, label: "À retravailler" }
+  { min: 90, max: 100, label: "score.excellent" },
+  { min: 80, max: 89, label: "score.very_good" },
+  { min: 70, max: 79, label: "score.good" },
+  { min: 55, max: 69, label: "score.fair" },
+  { min: 40, max: 54, label: "score.fragile" },
+  { min: 0, max: 39, label: "score.to_improve" },
 ];
 
 function normalizeScore(score) {
@@ -20,7 +20,7 @@ function normalizeScore(score) {
 
 /**
  * @param {number} score - Score entre 0 et 100 (ou 0–1)
- * @returns {string} "Excellent" | "Très bien" | "Bien" | "Correct" | "Fragile" | "À retravailler"
+ * @returns {string} Clé i18n (ex. "score.excellent") pour traduction côté frontend
  */
 function getScoreLabel(score) {
   const value = normalizeScore(score);

@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { getScoreLabel, getScoreColor } from "../components/pose/analysis/scoreTheme.js";
+import CircularScore from "../components/pose/analysis/CircularScore.jsx";
 import { useTranslation } from "react-i18next";
 import { fetchJson } from "../lib/poseSandboxUtils.js";
 
@@ -10,12 +11,18 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
 
+  const [showAllHistory, setShowAllHistory] = React.useState(false);
+
   useEffect(() => {
     refreshMe();
   }, [refreshMe]);
 
   const history = user?.posture_history ?? [];
-  const recent = [...history].reverse().slice(0, 10);
+  const hasMoreHistory = history.length > 10;
+  const displayedHistory = React.useMemo(() => {
+    const reversed = [...history].reverse();
+    return showAllHistory ? reversed : reversed.slice(0, 10);
+  }, [history, showAllHistory]);
   const globalScores = history
     .map((h) => (typeof h.scoreGlobal === "number" ? h.scoreGlobal : null))
     .filter((s) => s !== null);
@@ -64,6 +71,11 @@ export default function Dashboard() {
     }
   }
 
+  async function handleLogout() {
+    await logout();
+    navigate("/", { replace: true });
+  }
+
   return (
     <section className="dashboard">
       <div className="dashboard-header">
@@ -72,24 +84,16 @@ export default function Dashboard() {
             ? t("dashboard.greeting", { name: user.displayName })
             : t("dashboard.greeting_no_name")}
         </h2>
-        <p className="muted">
-          {user?.email}
-        </p>
       </div>
 
       <div className="dashboard-stats card">
         <h3>{t("dashboard.level_title")}</h3>
-        {levelLabel != null ? (
-          <p className="dashboard-level" style={{ color: levelColor ?? undefined }}>
-            {t(levelLabel)}
-          </p>
+        {averageScore != null ? (
+          <div className="dashboard-level-circle">
+            <CircularScore value={averageScore} />
+          </div>
         ) : (
           <p className="muted">{t("dashboard.level_empty")}</p>
-        )}
-        {averageScore != null && (
-          <p className="muted">
-            {t("dashboard.average_score", { score: averageScore })}
-          </p>
         )}
       </div>
 
@@ -101,41 +105,60 @@ export default function Dashboard() {
 
       <div className="dashboard-history card">
         <h3>{t("dashboard.history_title")}</h3>
-        {recent.length === 0 ? (
+        {displayedHistory.length === 0 ? (
           <p className="muted">{t("dashboard.history_empty")}</p>
         ) : (
-          <ul className="history-list">
-            {recent.map((entry, i) => (
-              <li key={entry.date + (entry.analysisId || "") + i} className="history-item">
-                <span className="history-date">
-                  {new Date(entry.date).toLocaleDateString(i18n.language || undefined, {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
-                <span className="history-figure">{entry.userLabel || "—"}</span>
-                <span
-                  className="history-feedback"
-                  style={{
-                    color:
-                      entry.feedbackGlobal
-                        ? getScoreColor(
-                            entry.scoreGlobal != null ? entry.scoreGlobal : 0
-                          )
-                        : undefined,
-                  }}
-                >
-                  {entry.feedbackGlobal || "—"}
-                </span>
-                {entry.scoreGlobal != null && (
-                  <span className="history-score">{Math.round(entry.scoreGlobal)}/100</span>
-                )}
-              </li>
-            ))}
-          </ul>
+          <>
+            <ul className="history-list">
+              {displayedHistory.map((entry, i) => (
+                <li key={entry.date + (entry.analysisId || "") + i} className="history-item">
+                  <span className="history-date">
+                    {new Date(entry.date).toLocaleDateString(i18n.language || undefined, {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </span>
+                  <span className="history-figure">{entry.userLabel || "—"}</span>
+                  <span
+                    className="history-feedback"
+                    style={{
+                      color:
+                        entry.feedbackGlobal
+                          ? getScoreColor(
+                              entry.scoreGlobal != null ? entry.scoreGlobal : 0
+                            )
+                          : undefined,
+                    }}
+                  >
+                    {entry.feedbackGlobal ? t(entry.feedbackGlobal) : "—"}
+                  </span>
+                  {entry.scoreGlobal != null && (
+                    <span className="history-score">{Math.round(entry.scoreGlobal)}/100</span>
+                  )}
+                  {entry.analysisId && (
+                    <Link
+                      to={`/analysis/${entry.analysisId}`}
+                      className="btn btn-link history-view"
+                    >
+                      {t("dashboard.history_view", "Voir")}
+                    </Link>
+                  )}
+                </li>
+              ))}
+            </ul>
+            {hasMoreHistory && (
+              <button
+                type="button"
+                className="btn btn-link history-toggle"
+                onClick={() => setShowAllHistory((v) => !v)}
+              >
+                {showAllHistory
+                  ? t("dashboard.history_show_less", "Voir moins")
+                  : t("dashboard.history_show_all", "Tout voir")}
+              </button>
+            )}
+          </>
         )}
       </div>
 
@@ -193,21 +216,23 @@ export default function Dashboard() {
         )}
       </div>
 
-      <div
-        className="dashboard-delete-account"
-        style={{
-          marginTop: 24,
-          display: "flex",
-          justifyContent: "flex-end",
-        }}
-      >
-        <button
-          type="button"
-          className="btn"
-          onClick={handleDeleteAccount}
-        >
-          {t("dashboard.delete_account_button")}
-        </button>
+      <div className="dashboard-delete-account">
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+          <button
+            type="button"
+            className="btn"
+            onClick={handleLogout}
+          >
+            {t("header.logout")}
+          </button>
+          <button
+            type="button"
+            className="btn"
+            onClick={handleDeleteAccount}
+          >
+            {t("dashboard.delete_account_button")}
+          </button>
+        </div>
       </div>
     </section>
   );
